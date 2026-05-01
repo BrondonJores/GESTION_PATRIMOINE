@@ -6,61 +6,54 @@ use App\Models\Article;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
 
+
 class ArticlePolicy
 {
-    /**
-     * Determine whether the user can view any models.
-     */
+    public function before(User $user, string $ability): ?bool
+    {
+        // L'admin peut TOUT faire sur les articles
+        if ($user->hasRole('admin')) {
+            return true;
+        }
+
+        return null; // continuer vers la méthode spécifique
+    }
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->can('view articles');
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
     public function view(User $user, Article $article): bool
     {
-        return false;
+        return $user->can('view articles');
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
     public function create(User $user): bool
     {
-        return false;
+        return $user->can('create articles');
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
     public function update(User $user, Article $article): bool
     {
-        return false;
+         // Règle métier : article réformé = intouchable
+        if ($article->statut === 'Réformé') {
+            return false;
+        }
+        return $user->can('update articles');
     }
 
-    /**
-     * Determine whether the user can delete the model.
-     */
     public function delete(User $user, Article $article): bool
     {
-        return false;
+       // Un article déjà réformé ne peut pas être supprimé (déjà hors service)
+        if ($article->statut === 'Réformé') {
+            return false;
+        }
+        return $user->can('delete articles');
     }
 
-    /**
-     * Determine whether the user can restore the model.
-     */
-    public function restore(User $user, Article $article): bool
+      public function exporter(User $user): bool
     {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
-    public function forceDelete(User $user, Article $article): bool
-    {
-        return false;
+        return $user->can('view articles')
+            && ($user->hasRole('admin') || $user->hasRole('gestionnaire'));
     }
 }

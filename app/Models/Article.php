@@ -18,6 +18,10 @@ class Article extends Model
         'categorie_id',
     ];
 
+      protected $casts = [
+        'quantite'     => 'integer',
+        'quantite_min' => 'integer',
+    ];
     public function categorie()
     {
         return $this->belongsTo(Categorie::class);

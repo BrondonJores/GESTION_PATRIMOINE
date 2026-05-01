@@ -1,6 +1,7 @@
 <?php
 
 namespace Database\Seeders;
+
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 
@@ -9,98 +10,126 @@ use Illuminate\Database\Seeder;
 
 class RolePermissionSeeder extends Seeder
 {
-    
 
-public function run()
-{
-    $permissions = [
 
-        // ARTICLES
-        'view articles',
-        'view_any articles',
-        'create articles',
-        'update articles',
-        'delete articles',
+    public function run()
+    {
+        $permissions = [
 
-        // BLOCS
-        'view blocs',
-        'create blocs',
-        'update blocs',
-        'delete blocs',
+            // ARTICLES
+            'view articles',
+            'view_any articles',
+            'create articles',
+            'update articles',
+            'delete articles',
+            // FAMILLES
+            'view familles',
+            'create familles',
+            'update familles',
+            'delete familles',
 
-        // SALLES
-        'view salles',
-        'create salles',
-        'update salles',
-        'delete salles',
+            // CATEGORIES
+            'view categories',
+            'create categories',
+            'update categories',
+            'delete categories',
+            // BLOCS
+            'view blocs',
+            'create blocs',
+            'update blocs',
+            'delete blocs',
 
-        // AFFECTATIONS
-        'view affectations',
-        'create affectations',
-        'update affectations',
-        'delete affectations',
-        'reaffecter articles',
-        'recuperer articles',
+            // SALLES
+            'view salles',
+            'create salles',
+            'update salles',
+            'delete salles',
 
-        // ALERTES
-        'view alertes',
-        'traiter alertes',
-        'delete alertes',
+            // AFFECTATIONS
+            'view affectations',
+            'create affectations',
+            'update affectations',
+            'delete affectations',
+            'reaffecter articles',
+            'recuperer articles',
 
-        // NOTIFICATIONS
-        'view notifications',
-        'delete notifications',
+            // ALERTES
+            'view alertes',
+            'traiter alertes',
+            'delete alertes',
 
-        // RAPPORTS
-        'view rapports',
-        'create rapports',
-        'export rapports',
+            // NOTIFICATIONS
+            'view notifications',
+            'delete notifications',
 
-        // LOGS
-        'view logs',
-        'delete logs',
-        'export logs',
+            // RAPPORTS
+            'view rapports',
+            'create rapports',
+            'export rapports',
 
-        // USERS
-        'view users',
-        'create users',
-        'update users',
-        'delete users',
-        'assign roles',
-        'reset password users',
-        'activate users',
-        'deactivate users',
-    ];
+            // LOGS
+            'view logs',
+            'delete logs',
+            'export logs',
 
-    foreach ($permissions as $permission) {
-        Permission::firstOrCreate(['name' => $permission]);
+            // USERS
+            'view users',
+            'create users',
+            'update users',
+            'delete users',
+            'assign roles',
+            'reset password users',
+            'activate users',
+            'deactivate users',
+        ];
+
+        foreach ($permissions as $permission) {
+            Permission::firstOrCreate(['name' => $permission]);
+        }
+
+        // ROLES
+        $admin = Role::firstOrCreate(['name' => 'admin']);
+        $gestionnaire = Role::firstOrCreate(['name' => 'gestionnaire']);
+        $user = Role::firstOrCreate(['name' => 'utilisateur']);
+
+        // ADMIN → tout
+        $admin->syncPermissions(Permission::all());
+
+        // GESTIONNAIRE
+        $gestionnaire->syncPermissions([
+            'view articles',
+            'create articles',
+            'update articles',
+            'view affectations',
+            'create affectations',
+            'update affectations',
+            'reaffecter articles',
+            'recuperer articles',
+            'view rapports',
+            'create rapports',
+            'view alertes',
+            'traiter alertes',
+            'view notifications',
+            'view blocs',
+            'view salles',
+            'view familles',
+            'create familles',
+            'update familles',
+            'view categories',
+            'create categories',
+            'update categories',
+        ]);
+
+        // UTILISATEUR (lecture seule)
+        $user->syncPermissions([
+            'view articles',
+            'view affectations',
+            'view rapports',
+            'view articles',
+            'view affectations',
+            'view rapports',
+            'view familles',    // ← ajouter
+            'view categories',
+        ]);
     }
-
-    // ROLES
-    $admin = Role::firstOrCreate(['name' => 'admin']);
-    $gestionnaire = Role::firstOrCreate(['name' => 'gestionnaire']);
-    $user = Role::firstOrCreate(['name' => 'utilisateur']);
-
-    // ADMIN → tout
-    $admin->syncPermissions(Permission::all());
-
-    // GESTIONNAIRE
-    $gestionnaire->syncPermissions([
-        'view articles', 'create articles', 'update articles',
-        'view affectations', 'create affectations', 'update affectations',
-        'reaffecter articles', 'recuperer articles',
-        'view rapports', 'create rapports',
-        'view alertes', 'update alertes',
-        'view notifications',
-        'view blocs', 'view salles'
-    ]);
-
-    // UTILISATEUR (lecture seule)
-    $user->syncPermissions([
-        'view articles',
-        'view affectations',
-        'view rapports'
-    ]);
 }
-    }
-
