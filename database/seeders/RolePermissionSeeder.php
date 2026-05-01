@@ -128,7 +128,7 @@ class RolePermissionSeeder extends Seeder
             'view articles',
             'view affectations',
             'view rapports',
-            'view familles',    // ← ajouter
+            'view familles',   
             'view categories',
         ]);
     }

@@ -74,7 +74,6 @@ class ArticlesTable
             ->filters([
 
                 // Filtre par Famille
-                // Cahier des charges : "Famille / Catégorie — liste déroulante multi-sélection"
                 SelectFilter::make('famille')
                     ->label('Famille')
                     ->options(
@@ -98,7 +97,6 @@ class ArticlesTable
                     ->relationship('categorie', 'nom_categorie'),
 
                 // Filtre par Statut
-                // Cahier des charges : "Statut de stock — Disponible / Affecté / Sous seuil minimal"
                 SelectFilter::make('statut')
                     ->label('Statut')
                     ->options([
@@ -121,7 +119,6 @@ class ArticlesTable
                     ]),
 
                 // Filtre articles sous seuil minimal
-                // Cahier des charges : "Statut de stock — Sous seuil minimal"
                 Filter::make('sous_seuil')
                     ->label('Sous seuil minimal')
                     ->query(function (Builder $query): Builder {
@@ -138,7 +135,7 @@ class ArticlesTable
                     ->action(function (Article $record) {
                         app(ArticleService::class)->supprimer($record);
                     })
-                    ->requiresConfirmation() // demande confirmation avant suppression
+                    ->requiresConfirmation() 
                     ->modalHeading('Supprimer l\'article')
                     ->modalDescription('Si cet article a des affectations, il sera réformé. Sinon, il sera supprimé définitivement.')
                     ->modalSubmitActionLabel('Confirmer'),

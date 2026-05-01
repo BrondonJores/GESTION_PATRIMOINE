@@ -35,7 +35,7 @@ class ArticlePolicy
 
     public function update(User $user, Article $article): bool
     {
-         // Règle métier : article réformé = intouchable
+         //  article réformé = intouchable
         if ($article->statut === 'Réformé') {
             return false;
         }

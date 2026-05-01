@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 class ArticleService
 {
     /**
-     * Supprimer un article.  RÈGLE MÉTIER  :
+     * Supprimer un article:
      * Si l'article a des affectations dans l'historique → on ne supprime pas
      * physiquement. Il passe au statut Réformé (archivage logique).
      * Suppression physique seulement si aucun mouvement n'existe.
@@ -30,19 +30,15 @@ class ArticleService
 
     /**
      * Valider les règles métier avant création ou modification.
-     *
-     * RÈGLE MÉTIER : quantite_min doit être < quantite.
-     * RÈGLE MÉTIER : on ne peut pas réduire la quantité en dessous
-     *               des unités actuellement affectées (elles sont physiquement absentes).
-     *
      * @throws Exception si une règle est violée
      */
+
     public function valider(array $data, ?Article $article = null): void
     {
         $quantite    = $data['quantite']    ?? null;
         $quantiteMin = $data['quantite_min'] ?? null;
 
-        // Règle 1 : quantite_min < quantite
+        // quantite_min < quantite
         if (!is_null($quantiteMin) && !is_null($quantite)) {
             if ($quantiteMin >= $quantite) {
                 throw new Exception(
@@ -51,7 +47,7 @@ class ArticleService
             }
         }
 
-        // Règle 2 : lors d'une modification, la nouvelle quantité ne peut pas
+        // lors d'une modification, la nouvelle quantité ne peut pas
         // être inférieure aux unités déjà affectées (elles sont hors stock)
         if ($article && !is_null($quantite)) {
             $quantiteAffectee = Affectation::where('article_id', $article->id)
@@ -71,8 +67,6 @@ class ArticleService
 
     /**
      * Statistiques globales pour le tableau de bord.
-     *
-     * Retourne les compteurs affichés dans le dashboard .
      */
     public function getStatistiques(): array
     {

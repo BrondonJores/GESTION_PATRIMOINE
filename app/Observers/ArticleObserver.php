@@ -10,11 +10,9 @@ use Illuminate\Support\Facades\Request;
 
 class ArticleObserver
 {
-    /**
-     * CRITIQUE : après création d'un article.
-     * → Log d'audit (traçabilité obligatoire selon cahier des charges).
-     * → Alerte si la quantité initiale est déjà sous le seuil.
-     */
+    
+     //après création d'un article.
+     
     public function created(Article $article): void
     {
         LogModel::create([
@@ -27,11 +25,8 @@ class ArticleObserver
 
     }
 
-    /**
-     * CRITIQUE : après modification d'un article.
-     * → Log d'audit avec champs modifiés (avant/après).
-     * → Alerte si la quantité vient de passer sous le seuil minimal.
-     */
+    // après modification d'un article.
+     
     public function updated(Article $article): void
     {
         $dirty    = $article->getDirty();    // champs modifiés → nouvelles valeurs
@@ -52,10 +47,8 @@ class ArticleObserver
     }
 
 
-    /**
-     * CRITIQUE : avant suppression d'un article.
-     * → Log d'audit AVANT suppression (après, l'article n'existe plus en base).
-     */
+    //avant suppression d'un article.
+    
     public function deleting(Article $article): void
     {
         LogModel::create([

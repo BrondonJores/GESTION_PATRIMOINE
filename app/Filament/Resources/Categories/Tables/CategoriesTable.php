@@ -35,7 +35,7 @@ class CategoriesTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                  // Filtre par Famille — utile pour voir les catégories d'une famille
+                  // Filtre par Famille 
                 SelectFilter::make('famille_id')
                     ->label('Famille')
                     ->options(
