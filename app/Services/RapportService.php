@@ -14,6 +14,8 @@ use Throwable;
 class RapportService
 {
     /**
+     * Exporte un rapport PDF minimal et trace le fichier généré.
+     *
      * @param iterable<array<string, mixed>|Arrayable<string, mixed>> $rows
      */
     public function exportPdf(string $typeRapport, iterable $rows, ?User $user = null): Rapport
@@ -25,6 +27,8 @@ class RapportService
     }
 
     /**
+     * Exporte un rapport compatible Excel au format CSV et trace le fichier généré.
+     *
      * @param iterable<array<string, mixed>|Arrayable<string, mixed>> $rows
      */
     public function exportExcel(string $typeRapport, iterable $rows, ?User $user = null): Rapport
@@ -36,6 +40,8 @@ class RapportService
     }
 
     /**
+     * Génère un CSV simple, compatible avec Excel.
+     *
      * @param array<int, array<string, mixed>> $rows
      */
     private function makeCsv(array $rows): string
@@ -55,6 +61,8 @@ class RapportService
     }
 
     /**
+     * Génère un PDF minimal sans dépendance externe.
+     *
      * @param array<int, array<string, mixed>> $rows
      */
     private function makePdf(string $title, array $rows): string
@@ -126,6 +134,8 @@ class RapportService
     }
 
     /**
+     * Normalise les lignes exportées avant génération du fichier.
+     *
      * @param iterable<array<string, mixed>|Arrayable<string, mixed>> $rows
      * @return array<int, array<string, mixed>>
      */
@@ -134,13 +144,18 @@ class RapportService
         $normalized = [];
 
         foreach ($rows as $row) {
-            $normalized[] = $row instanceof Arrayable ? $row->toArray() : $row;
+            $normalized[] = array_map(
+                fn (mixed $value): mixed => is_scalar($value) || $value === null ? $value : json_encode($value, JSON_UNESCAPED_UNICODE),
+                $row instanceof Arrayable ? $row->toArray() : $row,
+            );
         }
 
         return $normalized;
     }
 
     /**
+     * Échappe les valeurs CSV selon la règle du guillemet doublé.
+     *
      * @param iterable<mixed> $values
      */
     private function csvLine(iterable $values): string
