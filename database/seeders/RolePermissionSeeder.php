@@ -15,26 +15,26 @@ public function run()
 {
     $permissions = [
 
-        // ARTICLES
+        // Articles
         'view articles',
         'view_any articles',
         'create articles',
         'update articles',
         'delete articles',
 
-        // BLOCS
+        // Blocs
         'view blocs',
         'create blocs',
         'update blocs',
         'delete blocs',
 
-        // SALLES
+        // Salles
         'view salles',
         'create salles',
         'update salles',
         'delete salles',
 
-        // AFFECTATIONS
+        // Affectations
         'view affectations',
         'create affectations',
         'update affectations',
@@ -42,26 +42,27 @@ public function run()
         'reaffecter articles',
         'recuperer articles',
 
-        // ALERTES
+        // Alertes
         'view alertes',
         'traiter alertes',
         'delete alertes',
 
-        // NOTIFICATIONS
+        // Notifications
         'view notifications',
         'delete notifications',
 
-        // RAPPORTS
+        // Rapports
         'view rapports',
         'create rapports',
+        'delete rapports',
         'export rapports',
 
-        // LOGS
+        // Journaux
         'view logs',
         'delete logs',
         'export logs',
 
-        // USERS
+        // Utilisateurs
         'view users',
         'create users',
         'update users',
@@ -76,26 +77,26 @@ public function run()
         Permission::firstOrCreate(['name' => $permission]);
     }
 
-    // ROLES
+    // Rôles
     $admin = Role::firstOrCreate(['name' => 'admin']);
     $gestionnaire = Role::firstOrCreate(['name' => 'gestionnaire']);
     $user = Role::firstOrCreate(['name' => 'utilisateur']);
 
-    // ADMIN → tout
+    // Administrateur : accès complet
     $admin->syncPermissions(Permission::all());
 
-    // GESTIONNAIRE
+    // Gestionnaire
     $gestionnaire->syncPermissions([
         'view articles', 'create articles', 'update articles',
         'view affectations', 'create affectations', 'update affectations',
         'reaffecter articles', 'recuperer articles',
-        'view rapports', 'create rapports',
-        'view alertes', 'update alertes',
+        'view rapports', 'create rapports', 'export rapports',
+        'view alertes', 'traiter alertes',
         'view notifications',
         'view blocs', 'view salles'
     ]);
 
-    // UTILISATEUR (lecture seule)
+    // Utilisateur : lecture seule
     $user->syncPermissions([
         'view articles',
         'view affectations',
@@ -103,4 +104,3 @@ public function run()
     ]);
 }
     }
-
