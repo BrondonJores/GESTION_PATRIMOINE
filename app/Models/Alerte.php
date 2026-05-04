@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Alerte extends Model
 {
@@ -15,7 +16,15 @@ class Alerte extends Model
         'article_id',
     ];
 
-     public function article()
+    protected function casts(): array
+    {
+        return [
+            'date_alerte' => 'datetime',
+            'date_traitement' => 'datetime',
+        ];
+    }
+
+    public function article(): BelongsTo
     {
         return $this->belongsTo(Article::class);
     }
