@@ -36,7 +36,7 @@ class AlerteObserver
 
         $this->notifications->notifyUsers(
             $this->notifications->supportRecipients(),
-            "Alerte #{$alerte->id} mise à jour: {$alerte->statut}.",
+            "Alerte #{$alerte->id} mise à jour : {$alerte->statut}.",
             'InApp',
         );
     }

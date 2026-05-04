@@ -10,8 +10,12 @@ use Illuminate\Support\Facades\DB;
 
 class NotificationService
 {
+    private const CANAUX_AUTORISES = ['Email', 'SMS', 'InApp', 'Tous'];
+
     public function notifyUser(User $user, string $contenu, string $canal = 'InApp'): Notification
     {
+        $this->validerCanal($canal);
+
         return Notification::create([
             'canal' => $canal,
             'contenu' => $contenu,
@@ -22,10 +26,14 @@ class NotificationService
     }
 
     /**
+     * Notifie plusieurs utilisateurs dans une même transaction.
+     *
      * @param Collection<int, User> $users
      */
     public function notifyUsers(Collection $users, string $contenu, string $canal = 'InApp'): void
     {
+        $this->validerCanal($canal);
+
         DB::transaction(function () use ($users, $contenu, $canal): void {
             $users->each(fn (User $user) => $this->notifyUser($user, $contenu, $canal));
         });
@@ -41,5 +49,12 @@ class NotificationService
     public function supportRecipients(): Collection
     {
         return User::permission('view notifications')->get();
+    }
+
+    private function validerCanal(string $canal): void
+    {
+        if (! in_array($canal, self::CANAUX_AUTORISES, true)) {
+            throw new \InvalidArgumentException("Le canal de notification [{$canal}] n'est pas autorisé.");
+        }
     }
 }
