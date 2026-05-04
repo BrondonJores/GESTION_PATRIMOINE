@@ -2,6 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\Affectation;
+use App\Models\Article;
+use App\Observers\AffectationObserver;
+use App\Policies\AffectationPolicy;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use App\Models\Article;
 use App\Observers\ArticleObserver;
@@ -9,20 +14,17 @@ use App\Services\ArticleService;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
+
     public function register(): void
     {
          $this->app->singleton(ArticleService::class);
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
-          //déclenche automatique des actions aprés CRUB sur articles
-          Article::observe(ArticleObserver::class);
+        Article::observe(ArticleObserver::class);        
+        Affectation::observe(AffectationObserver::class);
+        Gate::policy(Affectation::class, AffectationPolicy::class);
+
     }
 }
