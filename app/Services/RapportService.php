@@ -103,7 +103,13 @@ class RapportService
     private function persistRapport(string $typeRapport, string $format, string $path, ?User $user): Rapport
     {
         try {
-            return DB::transaction(fn (): Rapport => $this->createRapport($typeRapport, $format, $path, $user));
+            return DB::transaction(function () use ($typeRapport, $format, $path, $user): Rapport {
+                $rapport = $this->createRapport($typeRapport, $format, $path, $user);
+
+                app(AuditLogService::class)->export("Rapports - {$typeRapport}", $user);
+
+                return $rapport;
+            });
         } catch (Throwable $exception) {
             Storage::disk('local')->delete($path);
 
