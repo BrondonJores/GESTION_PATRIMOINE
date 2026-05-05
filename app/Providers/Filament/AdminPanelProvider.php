@@ -38,6 +38,12 @@ class AdminPanelProvider extends PanelProvider
             ->favicon(asset('images/favicon-patrimoine.svg'))
             ->sidebarCollapsibleOnDesktop()
             ->colors(fn (AppThemeService $theme): array => $theme->getFilamentColors())
+            ->darkMode(
+                app(AppThemeService::class)->hasDarkMode(),
+                app(AppThemeService::class)->hasForcedDarkMode(),
+            )
+            ->sidebarWidth(app(AppThemeService::class)->getSidebarWidth())
+            ->collapsedSidebarWidth(app(AppThemeService::class)->getCollapsedSidebarWidth())
             ->profile(EditProfile::class)
             ->userMenu(position: UserMenuPosition::Topbar)
             ->userMenuItems([
