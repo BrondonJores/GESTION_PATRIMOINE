@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="48" viewBox="0 0 220 48" role="img" aria-label="Gestion du patrimoine">
+    <rect width="48" height="48" rx="10" fill="#0f172a"/>
+    <path d="M13 33V17l11-6 11 6v16" fill="none" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M18 33v-9h12v9" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="62" y="22" fill="#111827" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700">Gestion</text>
+    <text x="62" y="38" fill="#4b5563" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="500">du patrimoine</text>
+</svg>
