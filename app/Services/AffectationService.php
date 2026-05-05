@@ -48,7 +48,7 @@ class AffectationService
                 'statut'   => $nouvelleQuantite <= 0 ? 'Affecté' : 'Disponible',
             ]);
 
-            // ── ALERTE AUTOMATIQUE SI STOCK ÉPUISÉ ──────────────
+            // ── ALERTE STOCK ÉPUISÉ ──────────────────────────────
             if ($nouvelleQuantite <= 0) {
                 Alerte::create([
                     'statut'      => 'Non_traité',
@@ -56,6 +56,32 @@ class AffectationService
                     'date_alerte' => now(),
                     'article_id'  => $article->id,
                     'retour'      => "Stock épuisé pour l'article : {$article->designation}",
+                ]);
+            }
+
+            // ── ALERTE STOCK MINIMALE ────────────────────────────
+            elseif ($article->quantite_min && $nouvelleQuantite <= $article->quantite_min) {
+                Alerte::create([
+                    'statut'      => 'Non_traité',
+                    'canal'       => 'InApp',
+                    'date_alerte' => now(),
+                    'article_id'  => $article->id,
+                    'retour'      => "Stock minimale pour l'article : {$article->designation}. Quantité restante : {$nouvelleQuantite}",
+                ]);
+            }
+
+            // ── ALERTE STOCK FAIBLE ──────────────────────────────
+            elseif (
+                $article->quantite_min &&
+                $nouvelleQuantite > $article->quantite_min &&
+                $nouvelleQuantite <= ($article->quantite_min + 10)
+            ) {
+                Alerte::create([
+                    'statut'      => 'Non_traité',
+                    'canal'       => 'InApp',
+                    'date_alerte' => now(),
+                    'article_id'  => $article->id,
+                    'retour'      => "Stock faible pour l'article : {$article->designation}. Quantité restante : {$nouvelleQuantite}",
                 ]);
             }
 
