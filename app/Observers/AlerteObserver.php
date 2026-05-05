@@ -3,17 +3,22 @@
 namespace App\Observers;
 
 use App\Models\Alerte;
+use App\Services\AuditLogService;
 use App\Services\NotificationService;
 use Illuminate\Support\Carbon;
 
 class AlerteObserver
 {
-    public function __construct(private readonly NotificationService $notifications)
-    {
+    public function __construct(
+        private readonly NotificationService $notifications,
+        private readonly AuditLogService $auditLogs,
+    ) {
     }
 
     public function created(Alerte $alerte): void
     {
+        $this->auditLogs->enregistrer("Alertes - #{$alerte->id}", 'Alerte');
+
         $this->notifications->notifyUsers(
             $this->notifications->supportRecipients(),
             "Nouvelle alerte {$alerte->statut} pour l'article #{$alerte->article_id}.",
@@ -33,6 +38,8 @@ class AlerteObserver
         if (! $alerte->wasChanged('statut')) {
             return;
         }
+
+        $this->auditLogs->modification("Alertes - #{$alerte->id}");
 
         $this->notifications->notifyUsers(
             $this->notifications->supportRecipients(),
