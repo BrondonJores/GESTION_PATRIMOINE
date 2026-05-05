@@ -5,9 +5,10 @@ namespace App\Filament\Pages;
 use App\Services\AppThemeService;
 use BackedEnum;
 use Filament\Forms\Components\ColorPicker;
-use Filament\Forms\Components\Select;
+use Filament\Forms\Components\ToggleButtons;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use UnitEnum;
@@ -40,62 +41,128 @@ class Apparence extends Page
     {
         return $schema
             ->components([
-                ColorPicker::make('primary')
-                    ->label('Couleur principale')
-                    ->required()
-                    ->hexColor(),
-                ColorPicker::make('gray')
-                    ->label('Couleur neutre')
-                    ->required()
-                    ->hexColor(),
-                ColorPicker::make('success')
-                    ->label('Couleur succès')
-                    ->required()
-                    ->hexColor(),
-                ColorPicker::make('warning')
-                    ->label('Couleur avertissement')
-                    ->required()
-                    ->hexColor(),
-                ColorPicker::make('danger')
-                    ->label('Couleur danger')
-                    ->required()
-                    ->hexColor(),
-                ColorPicker::make('info')
-                    ->label('Couleur information')
-                    ->required()
-                    ->hexColor(),
-                Select::make('dark_mode')
-                    ->label('Mode sombre')
-                    ->options([
-                        'enabled' => 'Activé',
-                        'disabled' => 'Désactivé',
+                Section::make('Thème rapide')
+                    ->description('Choisissez une base cohérente, puis ajustez les détails si nécessaire.')
+                    ->icon(Heroicon::OutlinedSwatch)
+                    ->schema([
+                        ToggleButtons::make('preset')
+                            ->label('Palette')
+                            ->options([
+                                'amber' => 'Ambre',
+                                'blue' => 'Bleu',
+                                'green' => 'Vert',
+                                'slate' => 'Sobre',
+                            ])
+                            ->icons([
+                                'amber' => Heroicon::OutlinedSun,
+                                'blue' => Heroicon::OutlinedBuildingOffice,
+                                'green' => Heroicon::OutlinedShieldCheck,
+                                'slate' => Heroicon::OutlinedMoon,
+                            ])
+                            ->colors([
+                                'amber' => 'warning',
+                                'blue' => 'info',
+                                'green' => 'success',
+                                'slate' => 'gray',
+                            ])
+                            ->grouped()
+                            ->live()
+                            ->afterStateUpdated(fn (?string $state) => $this->applyPreset($state)),
+                    ]),
+                Section::make('Couleurs avancées')
+                    ->description('Ces couleurs alimentent les boutons, badges, alertes et états du panel.')
+                    ->icon(Heroicon::OutlinedAdjustmentsHorizontal)
+                    ->collapsible()
+                    ->schema([
+                        ColorPicker::make('primary')
+                            ->label('Principale')
+                            ->required()
+                            ->hexColor(),
+                        ColorPicker::make('gray')
+                            ->label('Neutre')
+                            ->required()
+                            ->hexColor(),
+                        ColorPicker::make('success')
+                            ->label('Succès')
+                            ->required()
+                            ->hexColor(),
+                        ColorPicker::make('warning')
+                            ->label('Avertissement')
+                            ->required()
+                            ->hexColor(),
+                        ColorPicker::make('danger')
+                            ->label('Danger')
+                            ->required()
+                            ->hexColor(),
+                        ColorPicker::make('info')
+                            ->label('Information')
+                            ->required()
+                            ->hexColor(),
                     ])
-                    ->required(),
-                Select::make('dark_mode_forced')
-                    ->label('Forcer le mode sombre')
-                    ->options([
-                        'disabled' => 'Non',
-                        'enabled' => 'Oui',
+                    ->columns([
+                        'md' => 2,
+                        'xl' => 3,
+                    ]),
+                Section::make('Navigation et affichage')
+                    ->description('Réglages appliqués après rechargement complet du panel.')
+                    ->icon(Heroicon::OutlinedBars3)
+                    ->schema([
+                        ToggleButtons::make('dark_mode')
+                            ->label('Mode sombre')
+                            ->options([
+                                'enabled' => 'Activé',
+                                'disabled' => 'Désactivé',
+                            ])
+                            ->icons([
+                                'enabled' => Heroicon::OutlinedMoon,
+                                'disabled' => Heroicon::OutlinedSun,
+                            ])
+                            ->colors([
+                                'enabled' => 'gray',
+                                'disabled' => 'warning',
+                            ])
+                            ->grouped()
+                            ->required(),
+                        ToggleButtons::make('dark_mode_forced')
+                            ->label('Forcer le mode sombre')
+                            ->options([
+                                'disabled' => 'Non',
+                                'enabled' => 'Oui',
+                            ])
+                            ->icons([
+                                'disabled' => Heroicon::OutlinedComputerDesktop,
+                                'enabled' => Heroicon::OutlinedMoon,
+                            ])
+                            ->colors([
+                                'disabled' => 'gray',
+                                'enabled' => 'info',
+                            ])
+                            ->grouped()
+                            ->required(),
+                        ToggleButtons::make('sidebar_width')
+                            ->label('Largeur sidebar')
+                            ->options([
+                                '16rem' => 'Compacte',
+                                '18rem' => 'Réduite',
+                                '20rem' => 'Standard',
+                                '22rem' => 'Large',
+                                '24rem' => 'Très large',
+                            ])
+                            ->grouped()
+                            ->required(),
+                        ToggleButtons::make('collapsed_sidebar_width')
+                            ->label('Sidebar repliée')
+                            ->options([
+                                '4rem' => 'Compacte',
+                                '4.5rem' => 'Standard',
+                                '5rem' => 'Large',
+                            ])
+                            ->grouped()
+                            ->required(),
                     ])
-                    ->required(),
-                Select::make('sidebar_width')
-                    ->label('Largeur de la sidebar')
-                    ->options([
-                        '16rem' => 'Compacte',
-                        '18rem' => 'Réduite',
-                        '20rem' => 'Standard',
-                        '22rem' => 'Large',
-                        '24rem' => 'Très large',
-                    ])
-                    ->required(),
-                Select::make('collapsed_sidebar_width')
-                    ->label('Largeur sidebar repliée')
-                    ->options([
-                        '4rem' => 'Compacte',
-                        '4.5rem' => 'Standard',
-                        '5rem' => 'Large',
-                    ])
-                    ->required(),
+                    ->columns([
+                        'md' => 2,
+                    ]),
             ])
             ->statePath('data');
     }
@@ -109,5 +176,53 @@ class Apparence extends Page
             ->body('Rechargez la page pour appliquer les nouvelles couleurs au panel.')
             ->success()
             ->send();
+    }
+
+    private function applyPreset(?string $preset): void
+    {
+        $presets = [
+            'amber' => [
+                'primary' => '#f59e0b',
+                'gray' => '#71717a',
+                'success' => '#22c55e',
+                'warning' => '#f59e0b',
+                'danger' => '#ef4444',
+                'info' => '#3b82f6',
+            ],
+            'blue' => [
+                'primary' => '#2563eb',
+                'gray' => '#64748b',
+                'success' => '#16a34a',
+                'warning' => '#d97706',
+                'danger' => '#dc2626',
+                'info' => '#0284c7',
+            ],
+            'green' => [
+                'primary' => '#15803d',
+                'gray' => '#64748b',
+                'success' => '#16a34a',
+                'warning' => '#ca8a04',
+                'danger' => '#dc2626',
+                'info' => '#0ea5e9',
+            ],
+            'slate' => [
+                'primary' => '#334155',
+                'gray' => '#475569',
+                'success' => '#059669',
+                'warning' => '#d97706',
+                'danger' => '#e11d48',
+                'info' => '#2563eb',
+            ],
+        ];
+
+        if (! isset($presets[$preset])) {
+            return;
+        }
+
+        $this->form->fill([
+            ...$this->data,
+            ...$presets[$preset],
+            'preset' => $preset,
+        ]);
     }
 }
