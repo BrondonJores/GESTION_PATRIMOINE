@@ -8,6 +8,7 @@ use App\Models\Recuperation;
 use App\Models\Reaffectation;
 use Exception;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class AffectationService
 {
@@ -38,7 +39,7 @@ class AffectationService
                 'quantite'         => $data['quantite'],
                 'observations'     => $data['observations'] ?? null,
                 'date_affectation' => $data['date_affectation'] ?? now()->toDateString(),
-                'user_id'          => auth()->id(),
+                'user_id'          => Auth::id(),
             ]);
 
             $nouvelleQuantite = $article->quantite - $data['quantite'];
@@ -144,7 +145,7 @@ class AffectationService
             'quantite'         => $data['quantite'],
             'observations'     => $data['observations'] ?? null,
             'date_affectation' => now()->toDateString(),
-            'user_id'          => auth()->id(),
+             'user_id'     => Auth::id(),
         ]);
     });
 }

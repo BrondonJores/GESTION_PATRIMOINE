@@ -6,6 +6,7 @@ use App\Filament\Resources\Articles\ArticleResource;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 use App\Services\ArticleService;
+use Filament\Notifications\Notification;
 
 class EditArticle extends EditRecord
 {
@@ -24,18 +25,26 @@ class EditArticle extends EditRecord
     }
 
     //validation avant modification
-    protected function mutateFormDataBeforeSave(array $data): array
+     protected function mutateFormDataBeforeSave(array $data): array
     {
-        app(ArticleService::class)->valider($data, $this->getRecord());
-         // Si statut = Réformé → forcer etat = Réformé directement dans $data
-        // Comme ça Filament sauvegarde les deux champs en même temps
-        if (isset($data['statut']) && $data['statut'] === 'Réformé') {
-            $data['etat'] = 'Réformé';
-        }
-        if (isset($data['etat'])&& $data['etat']=== 'Réformé'){
-            $data['statut']= 'Réformé';
+        try {
+            app(ArticleService::class)->valider($data, $this->getRecord());
+
+            if (isset($data['statut']) && $data['statut'] === 'Réformé') {
+                $data['etat'] = 'Réformé';
+            }
+
+        } catch (\Exception $e) {
+            Notification::make()
+                ->title('Erreur')
+                ->body($e->getMessage())
+                ->danger()
+                ->persistent()
+                ->send();
+
+            $this->halt();
         }
 
         return $data;
     }
-}
+    }

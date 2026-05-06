@@ -42,8 +42,7 @@ class ArticleService
         if (!is_null($quantiteMin) && !is_null($quantite)) {
             if ($quantiteMin >= $quantite) {
                 throw new Exception(
-                    "La quantité minimale ({$quantiteMin}) doit être inférieure à la quantité totale ({$quantite})."
-                );
+"Le seuil minimal ({$quantiteMin}) doit être inférieur à la quantité en stock ({$quantite})."                );
             }
         }
 
@@ -56,9 +55,7 @@ class ArticleService
 
             if ($quantite < $quantiteAffectee) {
                 throw new Exception(
-                    "Impossible : {$quantiteAffectee} unité(s) sont actuellement affectées. " .
-                    "La quantité totale ne peut pas descendre en dessous."
-                );
+"{$quantiteAffectee} unité(s) sont actuellement affectées et ne peuvent pas être retirées du stock."                );
             }  
         }
 

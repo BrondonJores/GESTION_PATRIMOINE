@@ -8,7 +8,6 @@ use App\Observers\AffectationObserver;
 use App\Policies\AffectationPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
-use App\Models\Article;
 use App\Observers\ArticleObserver;
 use App\Services\ArticleService;
 
