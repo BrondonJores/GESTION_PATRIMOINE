@@ -44,7 +44,7 @@ class ArticleObserver
         }
 
             // Si la quantité a diminué → vérifier les seuils
-    if (array_key_exists('quantite', $article->getDirty())) {
+    if (array_key_exists('quantite', $article->getDirty()) && $article->statut !== 'Réformé') {
         $nouvelle = (int) $article->quantite;
         $ancienne = (int) $article->getOriginal('quantite');
         $seuilMin = $article->quantite_min;

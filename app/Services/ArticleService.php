@@ -9,24 +9,17 @@ use Illuminate\Support\Facades\DB;
 
 class ArticleService
 {
-    /**
-     * Supprimer un article:
-     * Si l'article a des affectations dans l'historique → on ne supprime pas
-     * physiquement. Il passe au statut Réformé (archivage logique).
-     * Suppression physique seulement si aucun mouvement n'existe.
-     */
     public function supprimer(Article $article): void
-    {
-        $aDesAffectations = Affectation::where('article_id', $article->id)->exists();
+{
+    
 
-        if ($aDesAffectations) {
-            // Suppression logique 
-            $article->update(['statut' => 'Réformé', 'etat' => 'Réformé']);
-        } else {
-            // Aucun historique → suppression physique autorisée
-            $article->delete();
-        }
-    }
+    // On archive uniquement ce qui reste en stock.
+    $article->update([
+        'statut'   => 'Réformé',
+        'etat'     => 'Réformé',
+        'quantite' => 0,
+    ]);
+}
 
     /**
      * Valider les règles métier avant création ou modification.
@@ -46,18 +39,10 @@ class ArticleService
             }
         }
 
-        // lors d'une modification, la nouvelle quantité ne peut pas
-        // être inférieure aux unités déjà affectées (elles sont hors stock)
-        if ($article && !is_null($quantite)) {
-            $quantiteAffectee = Affectation::where('article_id', $article->id)
-                ->whereNull('date_recuperation') // affectations actives (non récupérées)
-                ->sum('quantite');
-
-            if ($quantite < $quantiteAffectee) {
-                throw new Exception(
-"{$quantiteAffectee} unité(s) sont actuellement affectées et ne peuvent pas être retirées du stock."                );
-            }  
-        }
+        // une quantité négative n'est pas autorisée
+        if (!is_null($quantite) && $quantite < 0) {
+        throw new Exception("La quantité en stock ne peut pas être négative.");
+    }
 
 
     }

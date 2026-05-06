@@ -92,6 +92,7 @@ class AffectationService
         $article->update([
             'quantite' => $article->quantite + $data['quantite'],
             'statut'   => 'Disponible',
+            'etat' => 'Bon',
         ]);
 
         return $recuperation;

@@ -14,6 +14,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Notifications\Notification;
 
 
 class ArticlesTable
@@ -131,14 +132,20 @@ class ArticlesTable
             ->recordActions([
                 EditAction::make(),
                 //suppression personnalisée avec validation métier
-                DeleteAction::make()
-                    ->action(function (Article $record) {
-                        app(ArticleService::class)->supprimer($record);
-                    })
-                    ->requiresConfirmation() 
-                    ->modalHeading('Supprimer l\'article')
-                    ->modalDescription('Si cet article a des affectations, il sera réformé. Sinon, il sera supprimé définitivement.')
-                    ->modalSubmitActionLabel('Confirmer'),
+DeleteAction::make()
+    ->label('Archiver')
+    ->modalHeading('Archiver l\'article')
+    ->modalDescription('Le stock restant sera mis à zéro.')
+    ->modalSubmitActionLabel('Confirmer l\'archivage')
+    ->visible(fn (Article $record): bool => $record->statut !== 'Réformé') // ← disparaît si Réformé
+    ->action(function (Article $record) {
+        app(ArticleService::class)->supprimer($record);
+
+        Notification::make()
+            ->title('Article archivé')
+            ->success()
+            ->send();
+    }),
             ])
             ->actionsColumnLabel('Actions')
             ->toolbarActions([
