@@ -19,6 +19,14 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
+use App\Filament\Widgets\StatsOverviewWidget;
+use App\Filament\Widgets\AffectationsChartWidget;
+use App\Filament\Widgets\ArticlesStatutChartWidget;
+use App\Filament\Widgets\AlertesActivesWidget;
+use App\Filament\Widgets\DernieresNotificationsWidget;
+use App\Filament\Widgets\DerniersRapportsWidget;
+use Filament\Widgets\StatsOverviewWidget as WidgetsStatsOverviewWidget;
+
 class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
@@ -38,8 +46,12 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
-                AccountWidget::class,
-                FilamentInfoWidget::class,
+                WidgetsStatsOverviewWidget::class,
+                ArticlesStatutChartWidget::class,
+                AffectationsChartWidget::class,
+                AlertesActivesWidget::class,
+                DernieresNotificationsWidget::class,
+                DerniersRapportsWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,
