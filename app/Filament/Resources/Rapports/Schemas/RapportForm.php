@@ -104,12 +104,14 @@ class RapportForm
 
     private static function appliquerPeriodeRapide(?string $periode, Set $set): void
     {
+        $maintenant = now();
+
         [$debut, $fin] = match ($periode) {
-            'aujourdhui' => [now()->startOfDay(), now()->endOfDay()],
-            'sept_derniers_jours' => [now()->subDays(6)->startOfDay(), now()->endOfDay()],
-            'trente_derniers_jours' => [now()->subDays(29)->startOfDay(), now()->endOfDay()],
-            'mois_en_cours' => [now()->startOfMonth(), now()->endOfDay()],
-            'annee_en_cours' => [now()->startOfYear(), now()->endOfDay()],
+            'aujourdhui' => [$maintenant->copy()->startOfDay(), $maintenant],
+            'sept_derniers_jours' => [$maintenant->copy()->subDays(6)->startOfDay(), $maintenant],
+            'trente_derniers_jours' => [$maintenant->copy()->subDays(29)->startOfDay(), $maintenant],
+            'mois_en_cours' => [$maintenant->copy()->startOfMonth(), $maintenant],
+            'annee_en_cours' => [$maintenant->copy()->startOfYear(), $maintenant],
             default => [null, null],
         };
 

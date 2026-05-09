@@ -2,13 +2,18 @@
 
 namespace App\Filament\Resources\Rapports\Tables;
 
+use App\Filament\Resources\Rapports\RapportResource;
+use App\Models\Rapport;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Storage;
 
 class RapportsTable
 {
@@ -53,6 +58,15 @@ class RapportsTable
                     ]),
             ])
             ->recordActions([
+                Action::make('telecharger')
+                    ->label('Télécharger')
+                    ->icon(Heroicon::OutlinedArrowDownTray)
+                    ->color('success')
+                    ->visible(fn (Rapport $record): bool => RapportResource::canDownload($record))
+                    ->action(fn (Rapport $record) => Storage::disk('local')->download(
+                        $record->chemin_fichier,
+                        RapportResource::downloadName($record),
+                    )),
                 ViewAction::make(),
                 EditAction::make(),
             ])
