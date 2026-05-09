@@ -9,6 +9,9 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
+use OpenSpout\Common\Entity\Row;
+use OpenSpout\Common\Entity\Style\Style;
+use OpenSpout\Writer\XLSX\Writer;
 use Throwable;
 
 class RapportService
@@ -27,37 +30,65 @@ class RapportService
     }
 
     /**
-     * Exporte un rapport compatible Excel au format CSV et trace le fichier généré.
+     * Exporte un vrai fichier Excel XLSX et trace le fichier généré.
      *
      * @param iterable<array<string, mixed>|Arrayable<string, mixed>> $rows
      */
     public function exportExcel(string $typeRapport, iterable $rows, ?User $user = null): Rapport
     {
-        $path = $this->buildPath($typeRapport, 'csv');
-        Storage::disk('local')->put($path, $this->makeCsv($this->normalizeRows($rows)));
+        $path = $this->buildPath($typeRapport, 'xlsx');
+        Storage::disk('local')->put($path, $this->makeXlsx($this->normalizeRows($rows)));
 
         return $this->persistRapport($typeRapport, 'Excel', $path, $user);
     }
 
     /**
-     * Génère un CSV simple, compatible avec Excel.
+     * Génère un fichier XLSX compatible Excel.
      *
      * @param array<int, array<string, mixed>> $rows
      */
-    private function makeCsv(array $rows): string
+    private function makeXlsx(array $rows): string
     {
-        if ($rows === []) {
-            return '';
+        $temporaryFile = tempnam(sys_get_temp_dir(), 'rapport-excel-');
+
+        if ($temporaryFile === false) {
+            throw new \RuntimeException('Impossible de préparer le fichier Excel temporaire.');
         }
 
-        $headers = array_keys($rows[0]);
-        $lines = [$this->csvLine($headers)];
+        try {
+            $writer = new Writer();
+            $writer->openToFile($temporaryFile);
 
-        foreach ($rows as $row) {
-            $lines[] = $this->csvLine(array_map(fn (string $header) => $row[$header] ?? '', $headers));
+            $headerStyle = (new Style())
+                ->setFontBold()
+                ->setBackgroundColor('FFE5E7EB');
+
+            if ($rows === []) {
+                $writer->addRow(Row::fromValues(['Aucune donnée']));
+            } else {
+                $headers = array_keys($rows[0]);
+                $writer->addRow(Row::fromValues($headers, $headerStyle));
+
+                foreach ($rows as $row) {
+                    $writer->addRow(Row::fromValues(array_map(
+                        fn (string $header): mixed => $row[$header] ?? null,
+                        $headers,
+                    )));
+                }
+            }
+
+            $writer->close();
+
+            $content = file_get_contents($temporaryFile);
+        } finally {
+            @unlink($temporaryFile);
         }
 
-        return implode(PHP_EOL, $lines) . PHP_EOL;
+        if ($content === false) {
+            throw new \RuntimeException('Impossible de lire le fichier Excel généré.');
+        }
+
+        return $content;
     }
 
     /**
@@ -151,24 +182,14 @@ class RapportService
 
         foreach ($rows as $row) {
             $normalized[] = array_map(
-                fn (mixed $value): mixed => is_scalar($value) || $value === null ? $value : json_encode($value, JSON_UNESCAPED_UNICODE),
+                fn (mixed $value): mixed => is_scalar($value) || $value === null
+                    ? $value
+                    : json_encode($value, JSON_UNESCAPED_UNICODE),
                 $row instanceof Arrayable ? $row->toArray() : $row,
             );
         }
 
         return $normalized;
-    }
-
-    /**
-     * Échappe les valeurs CSV selon la règle du guillemet doublé.
-     *
-     * @param iterable<mixed> $values
-     */
-    private function csvLine(iterable $values): string
-    {
-        return collect($values)
-            ->map(fn (mixed $value) => '"' . str_replace('"', '""', (string) $value) . '"')
-            ->implode(',');
     }
 
     private function escapePdf(string $value): string
