@@ -139,6 +139,13 @@ class RapportService
 
                 app(AuditLogService::class)->export("Rapports - {$typeRapport}", $user);
 
+                if ($user !== null) {
+                    app(NotificationService::class)->notifyUser(
+                        $user,
+                        "Votre rapport {$typeRapport} au format {$format} est prêt.",
+                    );
+                }
+
                 return $rapport;
             });
         } catch (Throwable $exception) {
