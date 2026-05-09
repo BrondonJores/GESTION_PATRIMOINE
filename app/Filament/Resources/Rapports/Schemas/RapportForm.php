@@ -6,6 +6,7 @@ use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 
 class RapportForm
@@ -44,6 +45,38 @@ class RapportForm
                             ->required(),
                     ])
                     ->columns(2),
+                Section::make('Période du rapport')
+                    ->description('La période limite les données exportées et rend le rapport plus ciblé.')
+                    ->schema([
+                        Select::make('periode_rapide')
+                            ->label('Période rapide')
+                            ->options([
+                                'aujourdhui' => "Aujourd'hui",
+                                'sept_derniers_jours' => '7 derniers jours',
+                                'trente_derniers_jours' => '30 derniers jours',
+                                'mois_en_cours' => 'Mois en cours',
+                                'annee_en_cours' => 'Année en cours',
+                                'personnalisee' => 'Période personnalisée',
+                            ])
+                            ->native(false)
+                            ->default('trente_derniers_jours')
+                            ->live()
+                            ->afterStateUpdated(fn (?string $state, Set $set): mixed => self::appliquerPeriodeRapide($state, $set))
+                            ->dehydrated(false)
+                            ->required(),
+                        DateTimePicker::make('periode_debut')
+                            ->label('Début')
+                            ->seconds(false)
+                            ->beforeOrEqual('periode_fin')
+                            ->required(),
+                        DateTimePicker::make('periode_fin')
+                            ->label('Fin')
+                            ->seconds(false)
+                            ->afterOrEqual('periode_debut')
+                            ->beforeOrEqual('now')
+                            ->required(),
+                    ])
+                    ->columns(3),
                 Section::make('Informations système')
                     ->description('Ces informations sont générées automatiquement pour éviter les modifications manuelles.')
                     ->schema([
@@ -67,5 +100,24 @@ class RapportForm
                     ])
                     ->columns(3),
             ]);
+    }
+
+    private static function appliquerPeriodeRapide(?string $periode, Set $set): void
+    {
+        [$debut, $fin] = match ($periode) {
+            'aujourdhui' => [now()->startOfDay(), now()->endOfDay()],
+            'sept_derniers_jours' => [now()->subDays(6)->startOfDay(), now()->endOfDay()],
+            'trente_derniers_jours' => [now()->subDays(29)->startOfDay(), now()->endOfDay()],
+            'mois_en_cours' => [now()->startOfMonth(), now()->endOfDay()],
+            'annee_en_cours' => [now()->startOfYear(), now()->endOfDay()],
+            default => [null, null],
+        };
+
+        if ($debut === null || $fin === null) {
+            return;
+        }
+
+        $set('periode_debut', $debut);
+        $set('periode_fin', $fin);
     }
 }

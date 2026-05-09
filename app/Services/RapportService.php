@@ -20,26 +20,28 @@ class RapportService
      * Exporte un rapport PDF minimal et trace le fichier généré.
      *
      * @param iterable<array<string, mixed>|Arrayable<string, mixed>> $rows
+     * @param array{debut?: mixed, fin?: mixed} $periode
      */
-    public function exportPdf(string $typeRapport, iterable $rows, ?User $user = null): Rapport
+    public function exportPdf(string $typeRapport, iterable $rows, ?User $user = null, array $periode = []): Rapport
     {
         $path = $this->buildPath($typeRapport, 'pdf');
         Storage::disk('local')->put($path, $this->makePdf($typeRapport, $this->normalizeRows($rows)));
 
-        return $this->persistRapport($typeRapport, 'PDF', $path, $user);
+        return $this->persistRapport($typeRapport, 'PDF', $path, $user, $periode);
     }
 
     /**
      * Exporte un vrai fichier Excel XLSX et trace le fichier généré.
      *
      * @param iterable<array<string, mixed>|Arrayable<string, mixed>> $rows
+     * @param array{debut?: mixed, fin?: mixed} $periode
      */
-    public function exportExcel(string $typeRapport, iterable $rows, ?User $user = null): Rapport
+    public function exportExcel(string $typeRapport, iterable $rows, ?User $user = null, array $periode = []): Rapport
     {
         $path = $this->buildPath($typeRapport, 'xlsx');
         Storage::disk('local')->put($path, $this->makeXlsx($this->normalizeRows($rows)));
 
-        return $this->persistRapport($typeRapport, 'Excel', $path, $user);
+        return $this->persistRapport($typeRapport, 'Excel', $path, $user, $periode);
     }
 
     /**
@@ -131,11 +133,11 @@ class RapportService
         return $content . "trailer\n<< /Size " . (count($objects) + 1) . " /Root 1 0 R >>\nstartxref\n{$xref}\n%%EOF";
     }
 
-    private function persistRapport(string $typeRapport, string $format, string $path, ?User $user): Rapport
+    private function persistRapport(string $typeRapport, string $format, string $path, ?User $user, array $periode = []): Rapport
     {
         try {
-            return DB::transaction(function () use ($typeRapport, $format, $path, $user): Rapport {
-                $rapport = $this->createRapport($typeRapport, $format, $path, $user);
+            return DB::transaction(function () use ($typeRapport, $format, $path, $user, $periode): Rapport {
+                $rapport = $this->createRapport($typeRapport, $format, $path, $user, $periode);
 
                 app(AuditLogService::class)->export("Rapports - {$typeRapport}", $user);
 
@@ -155,11 +157,13 @@ class RapportService
         }
     }
 
-    private function createRapport(string $typeRapport, string $format, string $path, ?User $user): Rapport
+    private function createRapport(string $typeRapport, string $format, string $path, ?User $user, array $periode = []): Rapport
     {
         return Rapport::create([
             'type_rapport' => $typeRapport,
             'format' => $format,
+            'periode_debut' => $periode['debut'] ?? null,
+            'periode_fin' => $periode['fin'] ?? null,
             'chemin_fichier' => $path,
             'date_generation' => Carbon::now(),
             'user_id' => $user?->id,

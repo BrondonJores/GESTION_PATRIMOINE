@@ -11,6 +11,8 @@ class Rapport extends Model
         'type_rapport',
         'chemin_fichier',
         'format',
+        'periode_debut',
+        'periode_fin',
         'date_generation',
         'user_id',
     ];
@@ -19,6 +21,8 @@ class Rapport extends Model
     {
         return [
             'date_generation' => 'datetime',
+            'periode_debut' => 'datetime',
+            'periode_fin' => 'datetime',
         ];
     }
 

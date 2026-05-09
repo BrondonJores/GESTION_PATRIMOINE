@@ -27,6 +27,14 @@ class RapportsTable
                     ->label('Généré par')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('periode_debut')
+                    ->label('Début')
+                    ->dateTime()
+                    ->sortable(),
+                TextColumn::make('periode_fin')
+                    ->label('Fin')
+                    ->dateTime()
+                    ->sortable(),
                 TextColumn::make('chemin_fichier')
                     ->label('Fichier')
                     ->limit(45)
