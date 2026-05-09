@@ -26,6 +26,7 @@ class UserForm
                     ->label('Mot de passe')
                     ->password()
                     ->required(fn (string $operation): bool => $operation === 'create')
+                    ->visible(fn (string $operation): bool => $operation === 'create' || auth()->user()?->can('reset password users'))
                     ->dehydrated(fn (?string $state): bool => filled($state))
                     ->maxLength(255),
                 Select::make('roles')
@@ -33,7 +34,8 @@ class UserForm
                     ->relationship('roles', 'name')
                     ->multiple()
                     ->preload()
-                    ->searchable(),
+                    ->searchable()
+                    ->visible(fn (): bool => auth()->user()?->can('assign roles') ?? false),
             ]);
     }
 }
