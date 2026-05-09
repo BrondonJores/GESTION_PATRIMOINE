@@ -3,9 +3,9 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Pages\Apparence;
+use App\Filament\Pages\Profile;
 use App\Services\AppThemeService;
 use Filament\Actions\Action;
-use Filament\Auth\Pages\EditProfile;
 use Filament\Enums\UserMenuPosition;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -44,7 +44,7 @@ class AdminPanelProvider extends PanelProvider
             )
             ->sidebarWidth(app(AppThemeService::class)->getSidebarWidth())
             ->collapsedSidebarWidth(app(AppThemeService::class)->getCollapsedSidebarWidth())
-            ->profile(EditProfile::class)
+            ->profile(Profile::class, isSimple: false)
             ->userMenu(position: UserMenuPosition::Topbar)
             ->userMenuItems([
                 'profile' => fn (Action $action): Action => $action

@@ -13,6 +13,8 @@ class RapportInfolist
             ->components([
                 TextEntry::make('type_rapport')->label('Type de rapport'),
                 TextEntry::make('format')->label('Format')->badge(),
+                TextEntry::make('periode_debut')->label('Début de période')->dateTime(),
+                TextEntry::make('periode_fin')->label('Fin de période')->dateTime(),
                 TextEntry::make('chemin_fichier')->label('Chemin du fichier'),
                 TextEntry::make('user.name')->label('Généré par'),
                 TextEntry::make('date_generation')->label('Date de génération')->dateTime(),

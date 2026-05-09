@@ -11,9 +11,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable(['name', 'email', 'password', 'avatar_path'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements HasAvatar, HasName
 {
@@ -42,6 +43,10 @@ class User extends Authenticatable implements HasAvatar, HasName
 
     public function getFilamentAvatarUrl(): ?string
     {
+        if ($this->avatar_path) {
+            return Storage::disk('public')->url($this->avatar_path);
+        }
+
         return 'https://ui-avatars.com/api/?name=' . urlencode($this->name)
             . '&background=111827&color=ffffff&bold=true&format=svg';
     }

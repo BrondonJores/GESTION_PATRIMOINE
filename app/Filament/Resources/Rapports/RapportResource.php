@@ -15,6 +15,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Storage;
 use UnitEnum;
 
 class RapportResource extends Resource
@@ -46,6 +47,24 @@ class RapportResource extends Resource
     public static function table(Table $table): Table
     {
         return RapportsTable::configure($table);
+    }
+
+    public static function canDownload(Rapport $rapport): bool
+    {
+        return auth()->user()?->can('export rapports')
+            && filled($rapport->chemin_fichier)
+            && Storage::disk('local')->exists($rapport->chemin_fichier);
+    }
+
+    public static function downloadName(Rapport $rapport): string
+    {
+        $extension = pathinfo($rapport->chemin_fichier ?? '', PATHINFO_EXTENSION)
+            ?: ($rapport->format === 'Excel' ? 'xlsx' : 'pdf');
+
+        return str($rapport->type_rapport)
+            ->slug()
+            ->append('-', $rapport->date_generation?->format('Ymd-His') ?? now()->format('Ymd-His'), '.', $extension)
+            ->toString();
     }
 
     public static function getRelations(): array
