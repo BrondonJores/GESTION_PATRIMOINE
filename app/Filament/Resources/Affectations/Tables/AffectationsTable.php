@@ -14,6 +14,7 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -117,7 +118,20 @@ class AffectationsTable
                             ->rows(3),
                     ])
                     ->action(function ($record, array $data) {
-                        app(AffectationService::class)->reaffecter($record, $data);
+                        try {
+                            app(AffectationService::class)->reaffecter($record, $data);
+                            Notification::make()
+                                ->title('Réaffectation effectuée avec succès')
+                                ->success()
+                                ->send();
+                        } catch (\Exception $e) {
+                            Notification::make()
+                                ->title('Erreur')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->persistent()
+                                ->send();
+                        }
                     })
                     ->visible(fn ($record) => is_null($record->date_recuperation)),
 
@@ -138,6 +152,7 @@ class AffectationsTable
                         DatePicker::make('date_recuperation')
                             ->label('Date de récupération')
                             ->default(now())
+                            ->maxDate(now())
                             ->required(),
 
                         Textarea::make('observations')
@@ -145,13 +160,29 @@ class AffectationsTable
                             ->rows(3),
                     ])
                     ->action(function ($record, array $data) {
-                        app(AffectationService::class)->recuperer($record, $data);
+                        try {
+                            app(AffectationService::class)->recuperer($record, $data);
+                            Notification::make()
+                                ->title('Récupération effectuée avec succès')
+                                ->success()
+                                ->send();
+                        } catch (\Exception $e) {
+                            Notification::make()
+                                ->title('Erreur')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->persistent()
+                                ->send();
+                        }
                     })
                     ->visible(fn ($record) => is_null($record->date_recuperation)),
 
                 // ── EDIT / DELETE ────────────────────────────────────
-                EditAction::make(),
-                DeleteAction::make()->requiresConfirmation(),
+                EditAction::make()
+                    ->visible(fn ($record) => is_null($record->date_recuperation)),
+
+                DeleteAction::make()
+                    ->requiresConfirmation(),
             ])
             ->actionsColumnLabel('Actions')
             ->toolbarActions([

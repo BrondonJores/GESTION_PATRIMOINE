@@ -52,6 +52,7 @@ class AffectationForm
                 ->searchable()
                 ->preload()
                 ->placeholder('-- Tout le bloc --'),
+                // pas de ->required() → salle optionnelle
 
             TextInput::make('quantite')
                 ->label('Quantité')
@@ -62,6 +63,7 @@ class AffectationForm
             DatePicker::make('date_affectation')
                 ->label("Date d'affectation")
                 ->default(now())
+                ->maxDate(now())
                 ->required(),
 
             Textarea::make('observations')

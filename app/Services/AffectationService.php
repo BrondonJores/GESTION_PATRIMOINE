@@ -52,104 +52,101 @@ class AffectationService
         });
     }
 
-   public function recuperer(Affectation $affectation, array $data): Recuperation
-{
-    return DB::transaction(function () use ($affectation, $data) {
-        if (!is_null($affectation->date_recuperation)) {
-            throw new Exception("Cette affectation a déjà été récupérée.");
-        }
+    public function recuperer(Affectation $affectation, array $data): Recuperation
+    {
+        return DB::transaction(function () use ($affectation, $data) {
+            if (!is_null($affectation->date_recuperation)) {
+                throw new Exception("Cette affectation a déjà été récupérée.");
+            }
 
-        if ($data['quantite'] > $affectation->quantite) {
-            throw new Exception(
-                "Impossible de récupérer {$data['quantite']} unité(s). " .
-                "L'affectation concerne seulement {$affectation->quantite} unité(s)."
-            );
-        }
+            if ($data['quantite'] > $affectation->quantite) {
+                throw new Exception(
+                    "Impossible de récupérer {$data['quantite']} unité(s). " .
+                    "L'affectation concerne seulement {$affectation->quantite} unité(s)."
+                );
+            }
 
-        $recuperation = Recuperation::create([
-            'affectation_id'    => $affectation->id,
-            'quantite'          => $data['quantite'],
-            'observations'      => $data['observations'] ?? null,
-            'date_recuperation' => $data['date_recuperation'] ?? now()->toDateString(),
-        ]);
-
-        $quantiteRestante = $affectation->quantite - $data['quantite'];
-
-        if ($quantiteRestante > 0) {
-            // Récupération partielle → on réduit la quantité, affectation reste Active
-            $affectation->update([
-                'quantite' => $quantiteRestante,
-            ]);
-        } else {
-            // Récupération totale → on clôture l'affectation
-            $affectation->update([
+            $recuperation = Recuperation::create([
+                'affectation_id'    => $affectation->id,
+                'quantite'          => $data['quantite'],
+                'observations'      => $data['observations'] ?? null,
                 'date_recuperation' => $data['date_recuperation'] ?? now()->toDateString(),
             ]);
-        }
 
-        // Remettre la quantité récupérée dans le stock de l'article
-        $article = $affectation->article;
-        $article->update([
-            'quantite' => $article->quantite + $data['quantite'],
-            'statut'   => 'Disponible',
-            'etat' => 'Bon',
-        ]);
 
-        return $recuperation;
-    });
-}
-   public function reaffecter(Affectation $affectation, array $data): Affectation
-{
-    return DB::transaction(function () use ($affectation, $data) {
-        if (!is_null($affectation->date_recuperation)) {
-            throw new Exception("Cette affectation est déjà terminée.");
-        }
+            $quantiteRestante = $affectation->quantite - $data['quantite'];
 
-        if ($data['salle_id'] == $affectation->salle_id && $data['bloc_id'] == $affectation->bloc_id) {
-            throw new Exception("Le bloc et la salle doivent être différents de l'affectation actuelle.");
-        }
+            if ($quantiteRestante > 0) {
+                $affectation->update([
+                    'quantite' => $quantiteRestante,
+                ]);
+            } else {
+                $affectation->update([
+                    'date_recuperation' => $data['date_recuperation'] ?? now()->toDateString(),
+                ]);
+            }
 
-        if ($data['quantite'] > $affectation->quantite) {
-            throw new Exception(
-                "Impossible de réaffecter {$data['quantite']} unité(s). " .
-                "L'affectation source concerne {$affectation->quantite} unité(s)."
-            );
-        }
-
-        Reaffectation::create([
-            'affectation_id'     => $affectation->id,
-            'salle_id'           => $data['salle_id'] ?? null,
-            'quantite'           => $data['quantite'],
-            'observations'       => $data['observations'] ?? null,
-            'date_reaffectation' => now()->toDateString(),
-        ]);
-
-        $quantiteRestante = $affectation->quantite - $data['quantite'];
-
-        if ($quantiteRestante > 0) {
-            // Réaffectation partielle → on réduit la quantité de l'affectation source
-            $affectation->update([
-                'quantite' => $quantiteRestante,
+            $article = $affectation->article;
+            $nouvelleQuantite = $article->quantite + $data['quantite'];
+            $article->update([
+                'quantite' => $nouvelleQuantite,
+                'statut'   => $nouvelleQuantite > 0 ? 'Disponible' : 'Affecté',
             ]);
-        } else {
-            // Réaffectation totale → on clôture l'affectation source
-            $affectation->update([
-                'date_recuperation' => now()->toDateString(),
-            ]);
-        }
 
-        // Créer la nouvelle affectation vers le nouveau bloc/salle
-        return Affectation::create([
-            'article_id'       => $affectation->article_id,
-            'bloc_id'          => $data['bloc_id'],
-            'salle_id'         => $data['salle_id'] ?? null,
-            'quantite'         => $data['quantite'],
-            'observations'     => $data['observations'] ?? null,
-            'date_affectation' => now()->toDateString(),
-             'user_id'     => Auth::id(),
-        ]);
-    });
-}
+            return $recuperation;
+        });
+    }
+
+    public function reaffecter(Affectation $affectation, array $data): Affectation
+    {
+        return DB::transaction(function () use ($affectation, $data) {
+            if (!is_null($affectation->date_recuperation)) {
+                throw new Exception("Cette affectation est déjà terminée.");
+            }
+
+            if ($data['salle_id'] == $affectation->salle_id && $data['bloc_id'] == $affectation->bloc_id) {
+                throw new Exception(" la salle doivent être différents de l'affectation actuelle.");
+            }
+
+            if ($data['quantite'] > $affectation->quantite) {
+                throw new Exception(
+                    "Impossible de réaffecter {$data['quantite']} unité(s). " .
+                    "L'affectation source concerne {$affectation->quantite} unité(s)."
+                );
+            }
+
+            Reaffectation::create([
+                'affectation_id'     => $affectation->id,
+                'salle_id'           => $data['salle_id'] ?? null,
+                'quantite'           => $data['quantite'],
+                'observations'       => $data['observations'] ?? null,
+                'date_reaffectation' => now()->toDateString(),
+            ]);
+
+            $quantiteRestante = $affectation->quantite - $data['quantite'];
+
+            if ($quantiteRestante > 0) {
+                $affectation->update([
+                    'quantite' => $quantiteRestante,
+                ]);
+            } else {
+                $affectation->update([
+                    'date_recuperation' => now()->toDateString(),
+                ]);
+            }
+
+            return Affectation::create([
+                'article_id'       => $affectation->article_id,
+                'bloc_id'          => $data['bloc_id'],
+                'salle_id'         => $data['salle_id'] ?? null,
+                'quantite'         => $data['quantite'],
+                'observations'     => $data['observations'] ?? null,
+                'date_affectation' => now()->toDateString(),
+                'user_id'          => auth()->id(),
+            ]);
+        });
+    }
+
     public function getQuantiteDisponible(Article $article): int
     {
         $affectee = Affectation::where('article_id', $article->id)
