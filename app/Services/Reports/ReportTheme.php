@@ -6,32 +6,32 @@ class ReportTheme
 {
     public function pageWidth(): int
     {
-        return 842;
+        return 595;
     }
 
     public function pageHeight(): int
     {
-        return 595;
+        return 842;
     }
 
     public function margin(): int
     {
-        return 32;
+        return 42;
     }
 
     public function rowHeight(): int
     {
-        return 22;
+        return 24;
     }
 
     public function headerHeight(): int
     {
-        return 292;
+        return 392;
     }
 
     public function footerHeight(): int
     {
-        return 34;
+        return 52;
     }
 
     public function backgroundColor(): string

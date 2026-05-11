@@ -76,24 +76,23 @@ class ReportPdfRenderer
     {
         $commands = [];
         $commands[] = $this->theme->backgroundColor() . ' rg 0 0 ' . $this->theme->pageWidth() . ' ' . $this->theme->pageHeight() . ' re f';
-        $commands[] = $this->theme->borderColor() . ' RG 32 32 ' . ($this->theme->pageWidth() - 64) . ' ' . ($this->theme->pageHeight() - 64) . ' re S';
 
-        $commands[] = $this->text($this->theme->brandName(), 42, 558, 12, 'F2');
-        $commands[] = $this->text($this->theme->serviceName(), 42, 542, 9);
-        $commands[] = $this->text($this->theme->classificationLabel(), 636, 558, 9, 'F2');
-        $commands[] = $this->text($this->theme->documentNature(), 636, 542, 9);
-        $commands[] = $this->theme->primaryColor() . ' RG 42 526 758 1 re S';
+        $commands[] = $this->text($this->theme->brandName(), 48, 792, 12, 'F2');
+        $commands[] = $this->text($this->theme->serviceName(), 48, 774, 9);
+        $commands[] = $this->text($this->theme->classificationLabel(), 374, 792, 9, 'F2');
+        $commands[] = $this->text($this->theme->documentNature(), 374, 774, 9);
+        $commands[] = $this->theme->primaryColor() . ' RG 48 750 499 1 re S';
 
-        $commands[] = $this->text(strtoupper($this->theme->documentNature()), 344, 502, 13, 'F2');
-        $commands[] = $this->text($this->truncate(strtoupper($title), 740, 11), 42, 478, 11, 'F2');
+        $commands[] = $this->text(strtoupper($this->theme->documentNature()), 218, 714, 13, 'F2');
+        $commands[] = $this->text($this->truncate(strtoupper($title), 499, 11), 48, 682, 11, 'F2');
 
         if ($page === 1) {
             $commands = array_merge($commands, $this->renderAdministrativeNotice($title, $user, $periode, $summary));
         }
 
-        $commands[] = $this->text($this->theme->tableTitle(), 42, 326, 10, 'F2');
+        $commands[] = $this->text($this->theme->tableTitle(), 48, 408, 10, 'F2');
 
-        $tableTop = 306;
+        $tableTop = 386;
         $tableLeft = $this->theme->margin();
         $tableWidth = $this->theme->pageWidth() - ($this->theme->margin() * 2);
         $columnWidth = $tableWidth / max(count($columns), 1);
@@ -123,8 +122,8 @@ class ReportPdfRenderer
         }
 
         $commands[] = $this->theme->mutedColor() . ' rg ' . $this->theme->margin() . ' 24 ' . $tableWidth . ' 1 re f';
-        $commands[] = $this->text("Page {$page}/{$totalPages}", 730, 12, 9);
-        $commands[] = $this->text($this->theme->footerLabel(), 48, 12, 8);
+        $commands[] = $this->text("Page {$page}/{$totalPages}", 482, 20, 9);
+        $commands[] = $this->text($this->theme->footerLabel(), 48, 20, 8);
 
         return implode("\n", $commands);
     }
@@ -136,35 +135,25 @@ class ReportPdfRenderer
     private function renderAdministrativeNotice(string $title, ?User $user, array $periode, array $summary): array
     {
         $commands = [];
-        $summary = $summary === [] ? ['Lignes' => 0, 'Période' => 'Filtrée', 'Classification' => 'Interne'] : $summary;
         $reference = 'RAP-' . now()->format('Ymd-His');
-        $summaryText = $this->formatSummaryText($summary);
 
-        $commands[] = $this->theme->accentColor() . ' rg 42 386 758 70 re f';
-        $commands[] = $this->theme->borderColor() . ' RG 42 386 758 70 re S';
-        $commands[] = $this->theme->borderColor() . ' RG 42 421 758 1 re S';
-        $commands[] = $this->theme->borderColor() . ' RG 421 386 1 70 re S';
+        $commands[] = $this->theme->accentColor() . ' rg 48 576 499 64 re f';
+        $commands[] = $this->theme->borderColor() . ' RG 48 576 499 64 re S';
+        $commands[] = $this->theme->borderColor() . ' RG 48 608 499 1 re S';
+        $commands[] = $this->theme->borderColor() . ' RG 297 576 1 64 re S';
 
-        $commands[] = $this->text('Référence', 52, 440, 8, 'F2');
-        $commands[] = $this->text($reference, 136, 440, 8);
-        $commands[] = $this->text('Objet', 52, 424, 8, 'F2');
-        $commands[] = $this->text($this->truncate($title, 260, 8), 136, 424, 8);
+        $commands[] = $this->text('Référence', 58, 620, 8, 'F2');
+        $commands[] = $this->text($reference, 134, 620, 8);
+        $commands[] = $this->text('Objet', 58, 600, 8, 'F2');
+        $commands[] = $this->text($this->truncate($title, 150, 8), 134, 600, 8);
 
-        $commands[] = $this->text('Période', 432, 440, 8, 'F2');
-        $commands[] = $this->text($this->formatPeriod($periode), 516, 440, 8);
-        $commands[] = $this->text('Établi par', 432, 424, 8, 'F2');
-        $commands[] = $this->text($this->truncate($user?->name ?? 'Système', 240, 8), 516, 424, 8);
+        $commands[] = $this->text('Période', 308, 620, 8, 'F2');
+        $commands[] = $this->text($this->truncate($this->formatPeriod($periode), 150, 8), 386, 620, 8);
+        $commands[] = $this->text('Établi par', 308, 600, 8, 'F2');
+        $commands[] = $this->text($this->truncate($user?->name ?? 'Système', 150, 8), 386, 600, 8);
 
-        $commands[] = $this->text('Date de génération', 52, 404, 8, 'F2');
-        $commands[] = $this->text(now()->format('d/m/Y H:i'), 166, 404, 8);
-        $commands[] = $this->text('Niveau de diffusion', 432, 404, 8, 'F2');
-        $commands[] = $this->text($this->theme->classificationLabel(), 558, 404, 8);
-
-        $commands[] = $this->text('Synthèse administrative', 42, 362, 10, 'F2');
-
-        foreach ($this->wrap($summaryText, 142) as $index => $line) {
-            $commands[] = $this->text($line, 42, 346 - ($index * 12), 8);
-        }
+        $commands[] = $this->text('Date de génération', 58, 588, 8, 'F2');
+        $commands[] = $this->text(now()->format('d/m/Y H:i'), 174, 588, 8);
 
         return $commands;
     }
@@ -225,50 +214,6 @@ class ReportPdfRenderer
         return mb_strlen($value) > $maxCharacters
             ? mb_substr($value, 0, $maxCharacters - 1) . '…'
             : $value;
-    }
-
-    /**
-     * @param array<string, string|int|float> $summary
-     */
-    private function formatSummaryText(array $summary): string
-    {
-        $items = [];
-
-        foreach (array_slice($summary, 0, 5, preserve_keys: true) as $label => $value) {
-            $items[] = mb_strtolower((string) $label) . ' : ' . $this->formatValue($value);
-        }
-
-        return 'Le présent rapport consolide les informations disponibles sur la période indiquée. '
-            . 'Les constats principaux sont les suivants : ' . implode('; ', $items) . '. '
-            . 'Les données ci-dessous doivent être exploitées dans le respect des habilitations internes.';
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private function wrap(string $text, int $maxCharacters): array
-    {
-        $words = preg_split('/\s+/', $text) ?: [];
-        $lines = [];
-        $line = '';
-
-        foreach ($words as $word) {
-            $candidate = trim($line . ' ' . $word);
-
-            if ($line !== '' && mb_strlen($candidate) > $maxCharacters) {
-                $lines[] = $line;
-                $line = $word;
-                continue;
-            }
-
-            $line = $candidate;
-        }
-
-        if ($line !== '') {
-            $lines[] = $line;
-        }
-
-        return array_slice($lines, 0, 3);
     }
 
     private function formatPeriod(array $periode): string

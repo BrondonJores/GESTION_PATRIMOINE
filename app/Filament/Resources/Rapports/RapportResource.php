@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\Rapports;
 
 use App\Filament\Resources\Rapports\Pages\CreateRapport;
-use App\Filament\Resources\Rapports\Pages\EditRapport;
 use App\Filament\Resources\Rapports\Pages\ListRapports;
 use App\Filament\Resources\Rapports\Pages\ViewRapport;
 use App\Filament\Resources\Rapports\Schemas\RapportForm;
@@ -78,7 +77,6 @@ class RapportResource extends Resource
             'index' => ListRapports::route('/'),
             'create' => CreateRapport::route('/create'),
             'view' => ViewRapport::route('/{record}'),
-            'edit' => EditRapport::route('/{record}/edit'),
         ];
     }
 }

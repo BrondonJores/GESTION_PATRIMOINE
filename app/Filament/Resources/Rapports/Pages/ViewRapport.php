@@ -4,7 +4,6 @@ namespace App\Filament\Resources\Rapports\Pages;
 
 use App\Filament\Resources\Rapports\RapportResource;
 use Filament\Actions\Action;
-use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Storage;
@@ -25,7 +24,6 @@ class ViewRapport extends ViewRecord
                     $this->getRecord()->chemin_fichier,
                     RapportResource::downloadName($this->getRecord()),
                 )),
-            EditAction::make(),
         ];
     }
 }
