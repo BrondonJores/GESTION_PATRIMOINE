@@ -46,7 +46,6 @@ class ReportRowsBuilder
                     'Salle' => $affectation->salle?->nom_salle,
                     'Quantité' => $affectation->quantite,
                     'Date de récupération' => $affectation->date_recuperation,
-                    'Observations' => $affectation->observations,
                 ])
                 ->all(),
             'Réaffectations' => Reaffectation::query()
@@ -58,7 +57,6 @@ class ReportRowsBuilder
                     'Article' => $reaffectation->affectation?->article?->designation,
                     'Quantité' => $reaffectation->quantite,
                     'Date de réaffectation' => $reaffectation->date_reaffectation,
-                    'Observations' => $reaffectation->observations,
                 ])
                 ->all(),
             'Récupérations' => Recuperation::query()
@@ -70,7 +68,6 @@ class ReportRowsBuilder
                     'Article' => $recuperation->affectation?->article?->designation,
                     'Quantité' => $recuperation->quantite,
                     'Date de récupération' => $recuperation->date_recuperation,
-                    'Observations' => $recuperation->observations,
                 ])
                 ->all(),
             'Alertes' => Alerte::query()
@@ -84,7 +81,6 @@ class ReportRowsBuilder
                     'Canal' => $alerte->canal,
                     'Date alerte' => $alerte->date_alerte,
                     'Date traitement' => $alerte->date_traitement,
-                    'Retour' => $alerte->retour,
                 ])
                 ->all(),
             'Notifications' => Notification::query()
@@ -97,18 +93,15 @@ class ReportRowsBuilder
                     'Canal' => $notification->canal,
                     'Lu' => $notification->lu ? 'Oui' : 'Non',
                     'Date envoi' => $notification->date_envoi,
-                    'Contenu' => $notification->contenu,
                 ])
                 ->all(),
             'Utilisateurs' => User::query()
-                ->with('roles')
                 ->tap(fn (Builder $query): Builder => $this->filtrerPeriode($query, 'created_at', $data))
                 ->limit(5000)
                 ->get()
                 ->map(fn (User $user): array => [
+                    'Identifiant' => $user->id,
                     'Nom' => $user->name,
-                    'E-mail' => $user->email,
-                    'Rôles' => $user->roles->pluck('name')->implode(', '),
                     'Créé le' => $user->created_at,
                 ])
                 ->all(),
@@ -120,8 +113,7 @@ class ReportRowsBuilder
                 ->map(fn (AuditLog $log): array => [
                     'Module' => $log->module,
                     'Action' => $log->action,
-                    'Utilisateur' => $log->user?->name,
-                    'Adresse IP' => $log->adresse_ip,
+                    'Utilisateur' => $log->user_id ? "Utilisateur #{$log->user_id}" : 'Système',
                     'Date action' => $log->date_action,
                 ])
                 ->all(),
