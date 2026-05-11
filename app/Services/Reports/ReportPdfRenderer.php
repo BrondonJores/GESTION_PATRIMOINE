@@ -11,14 +11,15 @@ class ReportPdfRenderer
     private const PAGE_HEIGHT = 595;
     private const MARGIN = 32;
     private const ROW_HEIGHT = 22;
-    private const HEADER_HEIGHT = 118;
+    private const HEADER_HEIGHT = 188;
     private const FOOTER_HEIGHT = 34;
 
     /**
      * @param array<int, array<string, mixed>> $rows
      * @param array{debut?: mixed, fin?: mixed} $periode
+     * @param array<string, string|int|float> $summary
      */
-    public function render(string $title, array $rows, ?User $user = null, array $periode = []): string
+    public function render(string $title, array $rows, ?User $user = null, array $periode = [], array $summary = []): string
     {
         $columns = $this->columns($rows);
         $rows = $rows === [] ? [['Information' => 'Aucune donnée pour la période sélectionnée.']] : $rows;
@@ -37,6 +38,7 @@ class ReportPdfRenderer
                 totalPages: count($chunks),
                 user: $user,
                 periode: $periode,
+                summary: $summary,
             );
         }
 
@@ -67,24 +69,29 @@ class ReportPdfRenderer
      * @param array<int, string> $columns
      * @param array<int, array<string, mixed>> $rows
      * @param array{debut?: mixed, fin?: mixed} $periode
+     * @param array<string, string|int|float> $summary
      */
-    private function renderPage(string $title, array $columns, array $rows, int $page, int $totalPages, ?User $user, array $periode): string
+    private function renderPage(string $title, array $columns, array $rows, int $page, int $totalPages, ?User $user, array $periode, array $summary): string
     {
         $commands = [];
         $commands[] = '0.96 0.97 0.98 rg 0 0 ' . self::PAGE_WIDTH . ' ' . self::PAGE_HEIGHT . ' re f';
-        $commands[] = '1 1 1 rg ' . self::MARGIN . ' 470 778 88 re f';
-        $commands[] = '0.12 0.16 0.23 RG ' . self::MARGIN . ' 470 778 88 re S';
+        $commands[] = '0.12 0.16 0.23 rg 0 505 ' . self::PAGE_WIDTH . ' 90 re f';
+        $commands[] = '0.88 0.92 0.98 rg 32 550 130 24 re f';
 
-        $commands[] = $this->text('Gestion du patrimoine', 48, 532, 16, 'F2');
-        $commands[] = $this->text(strtoupper($title), 48, 508, 13, 'F2');
-        $commands[] = $this->text('Généré le : ' . now()->format('d/m/Y H:i'), 610, 532, 9);
-        $commands[] = $this->text('Généré par : ' . ($user?->name ?? 'Système'), 610, 516, 9);
-        $commands[] = $this->text('Période : ' . $this->formatPeriod($periode), 48, 486, 10);
+        $commands[] = $this->text('INTERNE - DIFFUSION LIMITÉE', 42, 557, 9, 'F2', white: false);
+        $commands[] = $this->text('Gestion du patrimoine', 42, 530, 16, 'F2', white: true);
+        $commands[] = $this->text(strtoupper($title), 42, 508, 12, 'F2', white: true);
+        $commands[] = $this->text('Généré le : ' . now()->format('d/m/Y H:i'), 620, 548, 9, white: true);
+        $commands[] = $this->text('Généré par : ' . ($user?->name ?? 'Système'), 620, 532, 9, white: true);
+        $commands[] = $this->text('Période : ' . $this->formatPeriod($periode), 620, 516, 9, white: true);
 
-        $commands[] = $this->text('Synthèse', 48, 452, 11, 'F2');
-        $commands[] = $this->text('Lignes exportées sur cette page : ' . count($rows), 48, 436, 9);
+        if ($page === 1) {
+            $commands = array_merge($commands, $this->renderSummary($summary));
+        }
 
-        $tableTop = 410;
+        $commands[] = $this->text('Détail du rapport', 48, 400, 11, 'F2');
+
+        $tableTop = 378;
         $tableLeft = self::MARGIN;
         $tableWidth = self::PAGE_WIDTH - (self::MARGIN * 2);
         $columnWidth = $tableWidth / max(count($columns), 1);
@@ -115,9 +122,34 @@ class ReportPdfRenderer
 
         $commands[] = '0.45 0.48 0.55 rg ' . self::MARGIN . ' 24 778 1 re f';
         $commands[] = $this->text("Page {$page}/{$totalPages}", 730, 12, 9);
-        $commands[] = $this->text('Document généré automatiquement depuis le panel Support & Admin.', 48, 12, 8);
+        $commands[] = $this->text('Document généré automatiquement - ne pas diffuser hors service autorisé.', 48, 12, 8);
 
         return implode("\n", $commands);
+    }
+
+    /**
+     * @param array<string, string|int|float> $summary
+     * @return array<int, string>
+     */
+    private function renderSummary(array $summary): array
+    {
+        $commands = [];
+        $summary = $summary === [] ? ['Lignes' => 0, 'Période' => 'Filtrée', 'Classification' => 'Interne'] : $summary;
+        $cards = array_slice($summary, 0, 4, preserve_keys: true);
+        $cardWidth = 184;
+        $x = 42;
+
+        $commands[] = $this->text('Résumé exécutif', 42, 476, 12, 'F2');
+
+        foreach ($cards as $label => $value) {
+            $commands[] = '1 1 1 rg ' . $x . ' 424 ' . $cardWidth . ' 38 re f';
+            $commands[] = '0.82 0.84 0.88 RG ' . $x . ' 424 ' . $cardWidth . ' 38 re S';
+            $commands[] = $this->text((string) $label, $x + 10, 448, 8);
+            $commands[] = $this->text((string) $value, $x + 10, 432, 13, 'F2');
+            $x += $cardWidth + 10;
+        }
+
+        return $commands;
     }
 
     /**

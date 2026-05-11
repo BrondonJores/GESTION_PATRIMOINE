@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Rapport;
 use App\Models\User;
 use App\Services\Reports\ReportPdfRenderer;
+use App\Services\Reports\ReportSummaryBuilder;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -27,7 +28,13 @@ class RapportService
     {
         $rows = $this->normalizeRows($rows);
         $path = $this->buildPath($typeRapport, 'pdf');
-        Storage::disk('local')->put($path, app(ReportPdfRenderer::class)->render($typeRapport, $rows, $user, $periode));
+        Storage::disk('local')->put($path, app(ReportPdfRenderer::class)->render(
+            title: $typeRapport,
+            rows: $rows,
+            user: $user,
+            periode: $periode,
+            summary: app(ReportSummaryBuilder::class)->build($typeRapport, $rows),
+        ));
 
         return $this->persistRapport($typeRapport, 'PDF', $path, $user, $periode);
     }
