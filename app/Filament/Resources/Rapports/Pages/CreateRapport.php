@@ -3,6 +3,9 @@
 namespace App\Filament\Resources\Rapports\Pages;
 
 use App\Filament\Resources\Rapports\RapportResource;
+use App\Services\Reports\ReportRowsBuilder;
+use App\Services\RapportService;
+use Illuminate\Database\Eloquent\Model;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateRapport extends CreateRecord
@@ -16,5 +19,19 @@ class CreateRapport extends CreateRecord
         $data['chemin_fichier'] = null;
 
         return $data;
+    }
+
+    protected function handleRecordCreation(array $data): Model
+    {
+        $service = app(RapportService::class);
+        $lignes = app(ReportRowsBuilder::class)->build($data);
+        $periode = [
+            'debut' => $data['periode_debut'],
+            'fin' => $data['periode_fin'],
+        ];
+
+        return $data['format'] === 'Excel'
+            ? $service->exportExcel($data['type_rapport'], $lignes, auth()->user(), $periode)
+            : $service->exportPdf($data['type_rapport'], $lignes, auth()->user(), $periode);
     }
 }

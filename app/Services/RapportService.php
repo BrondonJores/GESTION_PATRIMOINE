@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\Rapport;
 use App\Models\User;
+use App\Services\Reports\ReportPdfRenderer;
+use App\Services\Reports\ReportSummaryBuilder;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -17,15 +19,22 @@ use Throwable;
 class RapportService
 {
     /**
-     * Exporte un rapport PDF minimal et trace le fichier généré.
+     * Exporte un rapport PDF mis en page et trace le fichier généré.
      *
      * @param iterable<array<string, mixed>|Arrayable<string, mixed>> $rows
      * @param array{debut?: mixed, fin?: mixed} $periode
      */
     public function exportPdf(string $typeRapport, iterable $rows, ?User $user = null, array $periode = []): Rapport
     {
+        $rows = $this->normalizeRows($rows);
         $path = $this->buildPath($typeRapport, 'pdf');
-        Storage::disk('local')->put($path, $this->makePdf($typeRapport, $this->normalizeRows($rows)));
+        Storage::disk('local')->put($path, app(ReportPdfRenderer::class)->render(
+            title: $typeRapport,
+            rows: $rows,
+            user: $user,
+            periode: $periode,
+            summary: app(ReportSummaryBuilder::class)->build($typeRapport, $rows),
+        ));
 
         return $this->persistRapport($typeRapport, 'PDF', $path, $user, $periode);
     }
@@ -91,46 +100,6 @@ class RapportService
         }
 
         return $content;
-    }
-
-    /**
-     * Génère un PDF minimal sans dépendance externe.
-     *
-     * @param array<int, array<string, mixed>> $rows
-     */
-    private function makePdf(string $title, array $rows): string
-    {
-        $content = "%PDF-1.4\n";
-        $objects = [];
-        $body = "BT /F1 12 Tf 50 780 Td (" . $this->escapePdf($title) . ") Tj";
-        $line = 760;
-
-        foreach (array_slice($rows, 0, 45) as $row) {
-            $body .= " 50 {$line} Td (" . $this->escapePdf(implode(' | ', array_map('strval', $row))) . ") Tj";
-            $line -= 16;
-        }
-
-        $body .= ' ET';
-        $objects[] = "<< /Type /Catalog /Pages 2 0 R >>";
-        $objects[] = "<< /Type /Pages /Kids [3 0 R] /Count 1 >>";
-        $objects[] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>";
-        $objects[] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>";
-        $objects[] = "<< /Length " . strlen($body) . " >>\nstream\n{$body}\nendstream";
-
-        $offsets = [0];
-        foreach ($objects as $index => $object) {
-            $offsets[] = strlen($content);
-            $content .= ($index + 1) . " 0 obj\n{$object}\nendobj\n";
-        }
-
-        $xref = strlen($content);
-        $content .= "xref\n0 " . (count($objects) + 1) . "\n0000000000 65535 f \n";
-
-        foreach (array_slice($offsets, 1) as $offset) {
-            $content .= str_pad((string) $offset, 10, '0', STR_PAD_LEFT) . " 00000 n \n";
-        }
-
-        return $content . "trailer\n<< /Size " . (count($objects) + 1) . " /Root 1 0 R >>\nstartxref\n{$xref}\n%%EOF";
     }
 
     private function persistRapport(string $typeRapport, string $format, string $path, ?User $user, array $periode = []): Rapport
@@ -201,10 +170,5 @@ class RapportService
         }
 
         return $normalized;
-    }
-
-    private function escapePdf(string $value): string
-    {
-        return str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $value);
     }
 }

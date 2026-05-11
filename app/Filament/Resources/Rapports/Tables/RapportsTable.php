@@ -7,7 +7,6 @@ use App\Models\Rapport;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -66,9 +65,8 @@ class RapportsTable
                     ->action(fn (Rapport $record) => Storage::disk('local')->download(
                         $record->chemin_fichier,
                         RapportResource::downloadName($record),
-                    )),
+                )),
                 ViewAction::make(),
-                EditAction::make(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
