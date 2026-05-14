@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\Alertes\Pages;
 
 use App\Filament\Resources\Alertes\AlerteResource;
-use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
 class ListAlertes extends ListRecords
@@ -12,8 +11,6 @@ class ListAlertes extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [
-            CreateAction::make(),
-        ];
+        return [];
     }
 }

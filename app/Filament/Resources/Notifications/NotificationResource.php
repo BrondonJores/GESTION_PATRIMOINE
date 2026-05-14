@@ -2,8 +2,6 @@
 
 namespace App\Filament\Resources\Notifications;
 
-use App\Filament\Resources\Notifications\Pages\CreateNotification;
-use App\Filament\Resources\Notifications\Pages\EditNotification;
 use App\Filament\Resources\Notifications\Pages\ListNotifications;
 use App\Filament\Resources\Notifications\Pages\ViewNotification;
 use App\Filament\Resources\Notifications\Schemas\NotificationForm;
@@ -57,9 +55,7 @@ class NotificationResource extends Resource
     {
         return [
             'index' => ListNotifications::route('/'),
-            'create' => CreateNotification::route('/create'),
             'view' => ViewNotification::route('/{record}'),
-            'edit' => EditNotification::route('/{record}/edit'),
         ];
     }
 }

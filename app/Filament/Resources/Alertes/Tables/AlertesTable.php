@@ -2,10 +2,13 @@
 
 namespace App\Filament\Resources\Alertes\Tables;
 
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
+use App\Models\Alerte;
+use App\Services\AlerteStatusService;
+use App\Support\Alertes\StockAlertType;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Textarea;
 use Filament\Actions\ViewAction;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -20,6 +23,15 @@ class AlertesTable
                     ->label('Article')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('type_alerte')
+                    ->label("Type d'alerte")
+                    ->formatStateUsing(fn (?string $state): string => StockAlertType::label($state))
+                    ->badge()
+                    ->color(fn (?string $state): string => match ($state) {
+                        StockAlertType::STOCK_EPUISE => 'danger',
+                        StockAlertType::STOCK_MINIMAL => 'warning',
+                        default => 'gray',
+                    }),
                 TextColumn::make('statut')
                     ->label('Statut')
                     ->badge()
@@ -59,12 +71,28 @@ class AlertesTable
             ])
             ->recordActions([
                 ViewAction::make(),
-                EditAction::make(),
+                Action::make('prendre_en_charge')
+                    ->label('Prendre en charge')
+                    ->icon(Heroicon::OutlinedClock)
+                    ->color('warning')
+                    ->visible(fn (Alerte $record): bool => $record->statut === 'Non_traité')
+                    ->action(fn (Alerte $record): Alerte => app(AlerteStatusService::class)->prendreEnCharge($record)),
+                Action::make('marquer_resolue')
+                    ->label('Marquer résolue')
+                    ->icon(Heroicon::OutlinedCheckCircle)
+                    ->color('success')
+                    ->schema([
+                        Textarea::make('note_resolution')
+                            ->label('Note de résolution')
+                            ->required()
+                            ->maxLength(1000),
+                    ])
+                    ->visible(fn (Alerte $record): bool => $record->statut !== 'Résolu')
+                    ->action(fn (Alerte $record, array $data): Alerte => app(AlerteStatusService::class)->marquerResolue(
+                        $record,
+                        $data['note_resolution'] ?? null,
+                    )),
             ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+            ->toolbarActions([]);
     }
 }

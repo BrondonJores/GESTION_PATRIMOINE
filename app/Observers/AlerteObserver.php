@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Models\Alerte;
 use App\Services\AuditLogService;
 use App\Services\NotificationService;
+use App\Support\Alertes\StockAlertType;
 use Illuminate\Support\Carbon;
 
 class AlerteObserver
@@ -21,7 +22,7 @@ class AlerteObserver
 
         $this->notifications->notifyUsers(
             $this->notifications->supportRecipients(),
-            "Nouvelle alerte {$alerte->statut} pour l'article #{$alerte->article_id}.",
+            StockAlertType::label($alerte->type_alerte) . " pour l'article #{$alerte->article_id}.",
             $alerte->canal,
         );
     }
@@ -43,7 +44,7 @@ class AlerteObserver
 
         $this->notifications->notifyUsers(
             $this->notifications->supportRecipients(),
-            "Alerte #{$alerte->id} mise à jour : {$alerte->statut}.",
+            'Alerte #' . $alerte->id . ' mise à jour : ' . StockAlertType::label($alerte->type_alerte) . " - {$alerte->statut}.",
             'InApp',
         );
     }

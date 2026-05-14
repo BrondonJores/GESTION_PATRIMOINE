@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Alertes\Schemas;
 
+use App\Support\Alertes\StockAlertType;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -36,8 +37,15 @@ class AlerteForm
                         'Tous' => 'Tous',
                     ])
                     ->required(),
+                Select::make('type_alerte')
+                    ->label("Type d'alerte")
+                    ->options(StockAlertType::labels())
+                    ->required(),
                 Textarea::make('retour')
                     ->label('Retour')
+                    ->columnSpanFull(),
+                Textarea::make('note_resolution')
+                    ->label('Note de résolution')
                     ->columnSpanFull(),
                 DateTimePicker::make('date_alerte')
                     ->label("Date d'alerte")

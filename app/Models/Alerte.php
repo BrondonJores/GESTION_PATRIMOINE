@@ -10,7 +10,9 @@ class Alerte extends Model
     protected $fillable = [
         'statut',
         'canal',
+        'type_alerte',
         'retour',
+        'note_resolution',
         'date_alerte',
         'date_traitement',
         'article_id',
