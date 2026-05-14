@@ -10,6 +10,7 @@ use App\Models\Notification;
 use App\Models\Reaffectation;
 use App\Models\Recuperation;
 use App\Models\User;
+use App\Support\Alertes\StockAlertType;
 use Illuminate\Database\Eloquent\Builder;
 
 class ReportRowsBuilder
@@ -77,6 +78,7 @@ class ReportRowsBuilder
                 ->get()
                 ->map(fn (Alerte $alerte): array => [
                     'Article' => $alerte->article?->designation,
+                    "Type d'alerte" => StockAlertType::label($alerte->type_alerte),
                     'Statut' => $alerte->statut,
                     'Canal' => $alerte->canal,
                     'Date alerte' => $alerte->date_alerte,

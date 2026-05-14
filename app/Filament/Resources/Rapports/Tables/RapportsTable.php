@@ -5,8 +5,6 @@ namespace App\Filament\Resources\Rapports\Tables;
 use App\Filament\Resources\Rapports\RapportResource;
 use App\Models\Rapport;
 use Filament\Actions\Action;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -68,10 +66,6 @@ class RapportsTable
                 )),
                 ViewAction::make(),
             ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+            ->toolbarActions([]);
     }
 }

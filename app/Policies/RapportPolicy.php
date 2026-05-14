@@ -24,12 +24,12 @@ class RapportPolicy
 
     public function update(User $user, Rapport $rapport): bool
     {
-        return $user->can('create rapports');
+        return false;
     }
 
     public function delete(User $user, Rapport $rapport): bool
     {
-        return $user->can('delete rapports');
+        return false;
     }
 
     public function restore(User $user, Rapport $rapport): bool

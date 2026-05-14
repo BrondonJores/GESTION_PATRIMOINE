@@ -45,21 +45,17 @@ public function run()
         // Alertes
         'view alertes',
         'traiter alertes',
-        'delete alertes',
 
         // Notifications
         'view notifications',
-        'delete notifications',
 
         // Rapports
         'view rapports',
         'create rapports',
-        'delete rapports',
         'export rapports',
 
         // Journaux
         'view logs',
-        'delete logs',
         'export logs',
 
         // Utilisateurs

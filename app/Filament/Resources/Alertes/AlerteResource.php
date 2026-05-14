@@ -2,8 +2,6 @@
 
 namespace App\Filament\Resources\Alertes;
 
-use App\Filament\Resources\Alertes\Pages\CreateAlerte;
-use App\Filament\Resources\Alertes\Pages\EditAlerte;
 use App\Filament\Resources\Alertes\Pages\ListAlertes;
 use App\Filament\Resources\Alertes\Pages\ViewAlerte;
 use App\Filament\Resources\Alertes\Schemas\AlerteForm;
@@ -57,9 +55,7 @@ class AlerteResource extends Resource
     {
         return [
             'index' => ListAlertes::route('/'),
-            'create' => CreateAlerte::route('/create'),
             'view' => ViewAlerte::route('/{record}'),
-            'edit' => EditAlerte::route('/{record}/edit'),
         ];
     }
 }

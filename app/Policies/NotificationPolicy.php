@@ -20,7 +20,7 @@ class NotificationPolicy
 
     public function create(User $user): bool
     {
-        return $user->can('view notifications');
+        return false;
     }
 
     public function update(User $user, Notification $notification): bool
@@ -30,7 +30,7 @@ class NotificationPolicy
 
     public function delete(User $user, Notification $notification): bool
     {
-        return $user->can('delete notifications');
+        return false;
     }
 
     public function restore(User $user, Notification $notification): bool

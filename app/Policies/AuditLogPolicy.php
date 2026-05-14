@@ -29,7 +29,7 @@ class AuditLogPolicy
 
     public function delete(User $user, AuditLog $auditLog): bool
     {
-        return $user->can('delete logs');
+        return false;
     }
 
     public function restore(User $user, AuditLog $auditLog): bool

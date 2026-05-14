@@ -4,9 +4,6 @@ namespace App\Filament\Resources\Notifications\Tables;
 
 use App\Models\Notification;
 use Filament\Actions\Action;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
@@ -64,12 +61,7 @@ class NotificationsTable
                     ->icon(Heroicon::OutlinedEnvelope)
                     ->visible(fn (Notification $record): bool => $record->lu)
                     ->action(fn (Notification $record): bool => $record->forceFill(['lu' => false])->save()),
-                EditAction::make(),
             ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+            ->toolbarActions([]);
     }
 }
