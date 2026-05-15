@@ -4,12 +4,14 @@ namespace App\Providers;
 
 use App\Models\Affectation;
 use App\Models\Article;
+use App\Models\Stock;
 use App\Observers\AffectationObserver;
 use App\Policies\AffectationPolicy;
 use App\Services\AffectationService;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use App\Observers\ArticleObserver;
+use App\Observers\StockObserver;
 use App\Services\ArticleService;
 
 class AppServiceProvider extends ServiceProvider
@@ -28,7 +30,7 @@ class AppServiceProvider extends ServiceProvider
     {
 
         Article::observe(ArticleObserver::class);        
-
+        Stock::observe(StockObserver::class);
         Affectation::observe(AffectationObserver::class);
         Gate::policy(Affectation::class, AffectationPolicy::class);
 

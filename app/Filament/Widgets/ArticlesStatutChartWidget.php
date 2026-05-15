@@ -2,7 +2,7 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\Article;
+use App\Models\Stock;
 use Filament\Widgets\ChartWidget;
 
 class ArticlesStatutChartWidget extends ChartWidget
@@ -12,21 +12,22 @@ class ArticlesStatutChartWidget extends ChartWidget
 
     protected function getData(): array
     {
-        $disponibles = Article::where('statut', 'Disponible')->count();
-        $affectes    = Article::where('statut', 'Affecté')->count();
-        $maintenance = Article::where('statut', 'En_maintenance')->count();
-        $reformes    = Article::where('statut', 'Réformé')->count();
+        // Somme des quantités par statut dans la table stocks
+        $disponible  = Stock::where('statut', 'Disponible')->sum('quantite');
+        $affecte     = Stock::where('statut', 'Affecté')->sum('quantite');
+        $maintenance = Stock::where('statut', 'En_maintenance')->sum('quantite');
+        $reforme     = Stock::where('statut', 'Réformé')->sum('quantite');
 
         return [
             'datasets' => [[
-                'data'            => [$disponibles, $affectes, $maintenance, $reformes],
+                'data'            => [$disponible, $affecte, $maintenance, $reforme],
                 'backgroundColor' => [
-                    'rgba(34, 197, 94, 0.8)',   // vert — Disponible
-                    'rgba(234, 179, 8, 0.8)',    // jaune — Affecté
-                    'rgba(107, 114, 128, 0.8)',  // gris  — Maintenance
-                    'rgba(239, 68, 68, 0.8)',    // rouge — Réformé
+                    'rgba(34, 197, 94, 0.8)',
+                    'rgba(234, 179, 8, 0.8)',
+                    'rgba(107, 114, 128, 0.8)',
+                    'rgba(239, 68, 68, 0.8)',
                 ],
-                'borderColor' => ['#16a34a', '#ca8a04', '#4b5563', '#dc2626'],
+                'borderColor' => ['#16a34a','#ca8a04','#4b5563','#dc2626'],
                 'borderWidth' => 2,
             ]],
             'labels' => ['Disponible', 'Affecté', 'En maintenance', 'Réformé'],

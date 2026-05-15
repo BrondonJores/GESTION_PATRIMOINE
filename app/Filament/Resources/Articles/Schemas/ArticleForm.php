@@ -18,45 +18,22 @@ class ArticleForm
             ->required()
             ->unique(ignoreRecord: true),
 
-        TextInput::make('code_ancien')
-            ->label('Code ancien'),
-
+        
         TextInput::make('designation')
             ->label('Désignation')
             ->required(),
 
-        TextInput::make('quantite')
-            ->label('Quantité')
+        TextInput::make('code_ancien')
+            ->label('Code ancien'),
+
+        TextInput::make('quantite_totale')
+            ->label('Quantité totale')
             ->numeric()
-            ->default(0)
             ->required(),
 
         TextInput::make('quantite_min')
             ->label('Quantité minimale')
             ->numeric(),
-
-        Select::make('statut')
-            ->label('Statut')
-            ->options([
-                'Disponible' => 'Disponible',
-                'Affecté' => 'Affecté',
-                'En_maintenance' => 'En maintenance',
-                'Réformé' => 'Réformé',
-            ])
-            ->default('Disponible')
-            ->required(),
-
-        Select::make('etat')
-            ->label('État')
-            ->options([
-                'Neuf' => 'Neuf',
-                'Bon' => 'Bon',
-                'Usagé' => 'Usagé',
-                'En_panne' => 'En panne',
-                'Réformé' => 'Réformé',
-            ])
-            ->default('Bon')
-            ->required(),
 
         Select::make('categorie_id')
             ->label('Catégorie')

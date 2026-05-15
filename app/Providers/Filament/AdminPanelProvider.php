@@ -10,8 +10,6 @@ use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use Filament\Widgets\AccountWidget;
-use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -19,12 +17,10 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
-use App\Filament\Widgets\StatsOverviewWidget;
-use App\Filament\Widgets\AffectationsChartWidget;
+
 use App\Filament\Widgets\ArticlesStatutChartWidget;
-use App\Filament\Widgets\AlertesActivesWidget;
-use App\Filament\Widgets\DernieresNotificationsWidget;
-use App\Filament\Widgets\DerniersRapportsWidget;
+use App\Filament\Widgets\RepartitionBlocChartWidget;
+use App\Filament\Widgets\RepartitionCategorieChartWidget;
 use Filament\Widgets\StatsOverviewWidget as WidgetsStatsOverviewWidget;
 
 class AdminPanelProvider extends PanelProvider
@@ -48,10 +44,8 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 WidgetsStatsOverviewWidget::class,
                 ArticlesStatutChartWidget::class,
-                AffectationsChartWidget::class,
-                AlertesActivesWidget::class,
-                DernieresNotificationsWidget::class,
-                DerniersRapportsWidget::class,
+                RepartitionCategorieChartWidget::class,
+                RepartitionBlocChartWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,

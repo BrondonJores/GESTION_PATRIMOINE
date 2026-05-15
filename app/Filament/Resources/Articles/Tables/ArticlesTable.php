@@ -6,9 +6,9 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\DeleteAction;
-use App\Services\ArticleService;
 use App\Models\Article;
 use App\Models\Famille;
+use App\Models\Stock;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
@@ -27,40 +27,21 @@ class ArticlesTable
                 TextColumn::make('numero_reference')
                     ->label('N° Référence')
                     ->searchable(),
+                
+                TextColumn::make('designation')
+                    ->searchable(),
 
                 TextColumn::make('code_ancien')
                     ->label('Code ancien')
                     ->searchable(),
-                TextColumn::make('designation')
-                    ->searchable(),
 
-                TextColumn::make('quantite')
-                    ->label('Quantité')
+                TextColumn::make('quantite_totale')
+                    ->label('Quantité totale')
                     ->sortable(),
 
                 TextColumn::make('quantite_min')
                     ->label('Seuil minimum')
                     ->sortable(),
-
-
-                TextColumn::make('statut')
-                    ->badge()
-                    ->color(fn(string $state): string => match ($state) {
-                        'Disponible' => 'success',
-                        'Affecté' => 'warning',
-                        'En_maintenance' => 'gray',
-                        'Réformé' => 'danger',
-                    }),
-
-                TextColumn::make('etat')
-                    ->badge()
-                    ->color(fn(string $state): string => match ($state) {
-                        'Neuf' => 'success',
-                        'Bon' => 'primary',
-                        'Usagé' => 'warning',
-                        'En_panne' => 'danger',
-                        'Réformé' => 'gray',
-                    }),
 
 
                 TextColumn::make('categorie.nom_categorie')
@@ -70,6 +51,18 @@ class ArticlesTable
                 TextColumn::make('categorie.famille.nom_famille')
                     ->label('Famille')
                     ->searchable(),
+
+                // Statut global calculé
+                TextColumn::make('statut_global')
+                    ->label('Statut')
+                    ->getStateUsing(fn (Article $record) =>
+                        $record->is_archived ? 'Archivé' : 'Actif')
+                    ->badge()
+                    ->color(fn (string $state) => match ($state) {
+                        'Actif'   => 'success',
+                        'Archivé' => 'danger',
+                        default   => 'gray',
+                    }),
 
             ])
             ->filters([
@@ -97,62 +90,84 @@ class ArticlesTable
                     ->label('Catégorie')
                     ->relationship('categorie', 'nom_categorie'),
 
-                // Filtre par Statut
-                SelectFilter::make('statut')
+                 // Filtre Actifs / Archivés
+                SelectFilter::make('is_archived')
                     ->label('Statut')
                     ->options([
-                        'Disponible'     => 'Disponible',
-                        'Affecté'        => 'Affecté',
-                        'En_maintenance' => 'En maintenance',
-                        'Réformé'        => 'Réformé',
+                        '0' => 'Actifs uniquement',
+                        '1' => 'Archivés uniquement',
                     ]),
-
-                // Filtre par État
-                // Cahier des charges : "État — Neuf / Bon état / Usagé / En panne / Réformé"
-                SelectFilter::make('etat')
-                    ->label('État')
-                    ->options([
-                        'Neuf'     => 'Neuf',
-                        'Bon'      => 'Bon',
-                        'Usagé'    => 'Usagé',
-                        'En_panne' => 'En panne',
-                        'Réformé'  => 'Réformé',
-                    ]),
-
+                
                 // Filtre articles sous seuil minimal
-                Filter::make('sous_seuil')
-                    ->label('Sous seuil minimal')
-                    ->query(function (Builder $query): Builder {
-                        return $query
-                            ->whereNotNull('quantite_min')
-                            ->whereColumn('quantite', '<=', 'quantite_min');
-                    })
-                    ->toggle(), // ← bouton on/off simple
+        SelectFilter::make('niveau_stock')
+                    ->label('Niveau de stock')
+                    ->options([
+                        'epuise'  => '🔴 Stock épuisé (disponible = 0)',
+                        'minimal' => '🟠 Stock minimal (sous le seuil)',
+                        'faible'  => '🟡 Stock faible (proche du seuil)',
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        if (!filled($data['value'])) {
+                            return $query;
+                        }
+
+                        return match ($data['value']) {
+
+                            // Stock épuisé : ligne Disponible existe avec quantite = 0
+                            // OU ligne Disponible absente (article jamais initialisé)
+                            'epuise' => $query
+                                ->where('is_archived', false)
+                                ->where(function (Builder $q) {
+                                    $q->whereExists(fn ($sub) =>
+                                        $sub->from('stocks')
+                                            ->whereColumn('stocks.article_id', 'articles.id')
+                                            ->where('stocks.statut', 'Disponible')
+                                            ->where('stocks.quantite', 0)
+                                    )
+                                    ->orWhereNotExists(fn ($sub) =>
+                                        $sub->from('stocks')
+                                            ->whereColumn('stocks.article_id', 'articles.id')
+                                            ->where('stocks.statut', 'Disponible')
+                                    );
+                                }),
+
+                            // Stock minimal : disponible > 0 ET <= quantite_min
+                            // Nécessite que quantite_min soit défini
+                            'minimal' => $query
+                                ->where('is_archived', false)
+                                ->whereNotNull('quantite_min')
+                                ->whereExists(fn ($sub) =>
+                                    $sub->from('stocks')
+                                        ->whereColumn('stocks.article_id', 'articles.id')
+                                        ->where('stocks.statut', 'Disponible')
+                                        ->where('stocks.quantite', '>', 0)
+                                        ->whereRaw('stocks.quantite <= articles.quantite_min')
+                                ),
+
+                            // Stock faible : disponible > quantite_min ET <= quantite_min * 2
+                            // C'est la zone d'avertissement précoce
+                            'faible' => $query
+                                ->where('is_archived', false)
+                                ->whereNotNull('quantite_min')
+                                ->whereExists(fn ($sub) =>
+                                    $sub->from('stocks')
+                                        ->whereColumn('stocks.article_id', 'articles.id')
+                                        ->where('stocks.statut', 'Disponible')
+                                        ->whereRaw('stocks.quantite > articles.quantite_min')
+                                        ->whereRaw('stocks.quantite <= articles.quantite_min * 2')
+                                ),
+
+                            default => $query,
+                        };
+                    }),
             ])
             ->recordActions([
                 EditAction::make(),
-                //suppression personnalisée avec validation métier
-DeleteAction::make()
-    ->label('Archiver')
-    ->modalHeading('Archiver l\'article')
-    ->modalDescription('Le stock restant sera mis à zéro.')
-    ->modalSubmitActionLabel('Confirmer l\'archivage')
-    ->visible(fn (Article $record): bool => $record->statut !== 'Réformé') // ← disparaît si Réformé
-    ->action(function (Article $record) {
-        app(ArticleService::class)->supprimer($record);
-
-        Notification::make()
-            ->title('Article archivé')
-            ->success()
-            ->send();
-    }),
             ])
             ->actionsColumnLabel('Actions')
             ->toolbarActions([
-                // ajouter export plus tard si besoin
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+                BulkActionGroup::make([]),
+            ])
+            ->defaultSort('created_at', 'desc');
     }
 }

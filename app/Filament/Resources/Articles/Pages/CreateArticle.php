@@ -19,7 +19,7 @@ class CreateArticle extends CreateRecord
         app(ArticleService::class)->valider($data);
     } catch (\Exception $e) {
         Notification::make()
-            ->title('Erreur')
+            ->title('Création impossible')
             ->body($e->getMessage())
             ->danger()
             ->send();

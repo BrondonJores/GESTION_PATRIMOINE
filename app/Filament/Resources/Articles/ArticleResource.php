@@ -59,7 +59,7 @@ class ArticleResource extends Resource
         return $user 
     ? (
         $user->hasRole('admin') ||
-        ($user->can('update articles') && $record->statut !== 'Réformé')
+        ($user->can('update articles') && !$record->is_archived)
       ) 
     : false;
     }
@@ -68,9 +68,7 @@ class ArticleResource extends Resource
     public static function canDelete(Model $record): bool
     {/** @var User|null $user */
         
-        $user = Auth::user();
-        return $user ? ($user->can('delete articles') && $record->statut !== 'Réformé') : false;
-    }
+return false;    }
 
     public static function getRelations(): array
     {

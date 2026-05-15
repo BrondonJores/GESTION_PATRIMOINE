@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Affectations\Schemas;
 
 use App\Models\Article;
 use App\Models\Bloc;
+use App\Models\Stock;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -18,13 +19,21 @@ class AffectationForm
         return $schema->components([
             Select::make('article_id')
                 ->label('Article')
-                ->options(
-                    Article::whereNotIn('statut', ['Réformé', 'En_maintenance'])
+                ->options(function () {
+                    // ✅ Filtrer sur is_archived au lieu de statut
+                    // (la colonne statut n'existe plus sur la table articles)
+                    // On exclut aussi les articles dont le stock disponible = 0
+                    return Article::where('is_archived', false)
+                        ->get()
+                        ->filter(fn ($a) =>
+                            Stock::quantitePour($a->id, Stock::DISPONIBLE) > 0
+                        )
                         ->pluck('designation', 'id')
-                        ->toArray()
-                )
+                        ->toArray();
+                })
                 ->searchable()
-                ->required(),
+                ->required()
+                ->helperText('Seuls les articles avec du stock disponible sont listés.'),
 
             Select::make('bloc_id')
                 ->label('Bloc')
@@ -52,7 +61,6 @@ class AffectationForm
                 ->searchable()
                 ->preload()
                 ->placeholder('-- Tout le bloc --'),
-                // pas de ->required() → salle optionnelle
 
             TextInput::make('quantite')
                 ->label('Quantité')
