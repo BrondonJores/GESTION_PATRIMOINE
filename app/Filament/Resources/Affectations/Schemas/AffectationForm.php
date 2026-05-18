@@ -65,14 +65,19 @@ class AffectationForm
                 ->minValue(1)
                 ->required(),
 
-            DatePicker::make('date_affectation')
-                ->label("Date d'affectation")
-                ->default(now())
-                ->maxDate(function () {
-                    return auth()->user()?->hasRole('admin') ? null : now();
-                })
-                ->required(),
-
+DatePicker::make('date_affectation')
+    ->label("Date d'affectation")
+    ->default(now())
+    ->required()
+    // Tout le monde : pas de date future autorisée
+    ->maxDate(now())
+    // Gestionnaire et utilisateur : seulement aujourd'hui
+    // Admin : peut choisir n'importe quelle date passée (minDate libre)
+    ->minDate(function () {
+        return auth()->user()?->hasRole('admin')
+            ? null       // admin : pas de limite dans le passé
+            : now();     // autres : seulement aujourd'hui
+    }),
             Textarea::make('observations')
                 ->label('Observations')
                 ->rows(3),
