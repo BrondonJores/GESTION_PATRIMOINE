@@ -15,11 +15,15 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // Décommentez pour générer plusieurs utilisateurs de test.
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        $this->call(RolePermissionSeeder::class);
+
+        $admin = User::query()->firstOrCreate(
+            ['email' => 'test@example.com'],
+            ['name' => 'Administrateur', 'password' => 'password'],
+        );
+
+        $admin->assignRole('admin');
     }
 }

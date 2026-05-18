@@ -4,18 +4,13 @@ namespace Database\Seeders;
 
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
-
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class RolePermissionSeeder extends Seeder
 {
-
-
     public function run()
     {
         $permissions = [
-
             // ARTICLES
             'view articles',
             'view_any articles',
@@ -27,7 +22,6 @@ class RolePermissionSeeder extends Seeder
             'create familles',
             'update familles',
             'delete familles',
-
             // CATEGORIES
             'view categories',
             'create categories',
@@ -38,13 +32,11 @@ class RolePermissionSeeder extends Seeder
             'create blocs',
             'update blocs',
             'delete blocs',
-
             // SALLES
             'view salles',
             'create salles',
             'update salles',
             'delete salles',
-
             // AFFECTATIONS
             'view affectations',
             'create affectations',
@@ -52,26 +44,21 @@ class RolePermissionSeeder extends Seeder
             'delete affectations',
             'reaffecter articles',
             'recuperer articles',
-
             // ALERTES
             'view alertes',
             'traiter alertes',
             'delete alertes',
-
             // NOTIFICATIONS
             'view notifications',
             'delete notifications',
-
             // RAPPORTS
             'view rapports',
             'create rapports',
             'export rapports',
-
             // LOGS
             'view logs',
             'delete logs',
             'export logs',
-
             // USERS
             'view users',
             'create users',
@@ -107,6 +94,7 @@ class RolePermissionSeeder extends Seeder
             'recuperer articles',
             'view rapports',
             'create rapports',
+            'export rapports',
             'view alertes',
             'traiter alertes',
             'view notifications',
@@ -125,12 +113,8 @@ class RolePermissionSeeder extends Seeder
             'view articles',
             'view affectations',
             'view rapports',
-            'view articles',
-            'view affectations',
-            'view rapports',
-            'view familles',   
+            'view familles',
             'view categories',
         ]);
     }
-
 }

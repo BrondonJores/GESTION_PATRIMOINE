@@ -3,24 +3,28 @@
 namespace App\Providers;
 
 use App\Models\Affectation;
+use App\Models\Alerte;
 use App\Models\Article;
 use App\Models\Stock;
+use App\Models\User;
 use App\Observers\AffectationObserver;
-use App\Policies\AffectationPolicy;
-use App\Services\AffectationService;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\ServiceProvider;
+use App\Observers\AlerteObserver;
 use App\Observers\ArticleObserver;
 use App\Observers\StockObserver;
+use App\Observers\UserObserver;
+use App\Policies\AffectationPolicy;
+use App\Policies\RolePolicy;
+use App\Services\AffectationService;
 use App\Services\ArticleService;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\ServiceProvider;
+use Spatie\Permission\Models\Role;
 
 class AppServiceProvider extends ServiceProvider
 {
-
     public function register(): void
     {
-         $this->app->singleton(ArticleService::class);
-
+        $this->app->singleton(ArticleService::class);
         $this->app->singleton(AffectationService::class, function ($app) {
             return new AffectationService();
         });
@@ -28,11 +32,12 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-
-        Article::observe(ArticleObserver::class);        
+        Gate::policy(Role::class, RolePolicy::class);
+        Gate::policy(Affectation::class, AffectationPolicy::class);
+        Article::observe(ArticleObserver::class);
         Stock::observe(StockObserver::class);
         Affectation::observe(AffectationObserver::class);
-        Gate::policy(Affectation::class, AffectationPolicy::class);
-
+        Alerte::observe(AlerteObserver::class);
+        User::observe(UserObserver::class);
     }
 }
