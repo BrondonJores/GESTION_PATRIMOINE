@@ -18,55 +18,64 @@ class AffectationService
     //   de la ligne Disponible vers la ligne Affecté dans la table stocks
     // - La vérification de disponibilité se fait sur la table stocks,
     //   pas sur article.quantite
+public function affecter(array $data): Affectation
+{
+    return DB::transaction(function () use ($data) {
+        $article = Article::findOrFail($data['article_id']);
 
-    public function affecter(array $data): Affectation
-    {
-        return DB::transaction(function () use ($data) {
-            $article = Article::findOrFail($data['article_id']);
+        if ($article->is_archived) {
+            throw new Exception("Impossible d'affecter un article archivé.");
+        }
 
-            // Vérifier que l'article n'est pas archivé
-            // (remplace l'ancien check statut === 'Réformé')
-            if ($article->is_archived) {
-                throw new Exception("Impossible d'affecter un article archivé.");
-            }
+        $disponible = Stock::quantitePour($article->id, Stock::DISPONIBLE);
 
-            // Vérifier qu'il y a du stock maintenance
-            // (un article en maintenance partielle peut encore être affecté
-            //  sur ses unités disponibles)
-            $disponible = Stock::quantitePour($article->id, Stock::DISPONIBLE);
-
-            if ($data['quantite'] > $disponible) {
-                throw new Exception(
-                    "Stock insuffisant. Disponible : {$disponible}, " .
-                    "demandé : {$data['quantite']}."
-                );
-            }
-
-            // Créer l'affectation
-            $affectation = Affectation::create([
-                'article_id'       => $article->id,
-                'bloc_id'          => $data['bloc_id'],
-                'salle_id'         => $data['salle_id'] ?? null,
-                'quantite'         => $data['quantite'],
-                'observations'     => $data['observations'] ?? null,
-                'date_affectation' => $data['date_affectation'] ?? now()->toDateString(),
-                'user_id'          => Auth::id(),
-            ]);
-
-            // Déplacer le stock : Disponible ↓ — Affecté ↑
-            // L'ArticleObserver et le StockObserver se déclenchent automatiquement
-            // → StockObserver vérifie si une alerte doit être créée
-            Stock::deplacer(
-                $article->id,
-                Stock::DISPONIBLE,
-                Stock::AFFECTE,
-                $data['quantite']
+        if ($data['quantite'] > $disponible) {
+            throw new Exception(
+                "Stock insuffisant. Disponible : {$disponible}, " .
+                "demandé : {$data['quantite']}."
             );
+        }
 
-            return $affectation;
-        });
-    }
+        // ── VÉRIFICATION CAPACITÉ DE LA SALLE ──────────────
+        if (!empty($data['salle_id'])) {
+            $salle = \App\Models\Salle::find($data['salle_id']);
+            if ($salle && $salle->capacite) {
+                $dejaDansSalle = Affectation::where('salle_id', $salle->id)
+                    ->whereNull('date_recuperation')
+                    ->sum('quantite');
 
+                $totalApres = $dejaDansSalle + $data['quantite'];
+
+                if ($totalApres > $salle->capacite) {
+                    throw new Exception(
+                        "Capacité de la salle dépassée. Capacité : {$salle->capacite}, " .
+                        "déjà affecté : {$dejaDansSalle}, demandé : {$data['quantite']}. " .
+                        "Disponible : " . ($salle->capacite - $dejaDansSalle) . " place(s)."
+                    );
+                }
+            }
+        }
+
+        $affectation = Affectation::create([
+            'article_id'       => $article->id,
+            'bloc_id'          => $data['bloc_id'],
+            'salle_id'         => $data['salle_id'] ?? null,
+            'quantite'         => $data['quantite'],
+            'observations'     => $data['observations'] ?? null,
+            'date_affectation' => $data['date_affectation'] ?? now()->toDateString(),
+            'user_id'          => Auth::id(),
+        ]);
+
+        Stock::deplacer(
+            $article->id,
+            Stock::DISPONIBLE,
+            Stock::AFFECTE,
+            $data['quantite']
+        );
+
+        return $affectation;
+    });
+}
     
     // RÉCUPÉRER : Affecté → Disponible
     // Ce qui change :

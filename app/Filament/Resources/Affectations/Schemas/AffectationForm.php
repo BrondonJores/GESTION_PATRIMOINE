@@ -20,9 +20,6 @@ class AffectationForm
             Select::make('article_id')
                 ->label('Article')
                 ->options(function () {
-                    // ✅ Filtrer sur is_archived au lieu de statut
-                    // (la colonne statut n'existe plus sur la table articles)
-                    // On exclut aussi les articles dont le stock disponible = 0
                     return Article::where('is_archived', false)
                         ->get()
                         ->filter(fn ($a) =>
@@ -71,7 +68,9 @@ class AffectationForm
             DatePicker::make('date_affectation')
                 ->label("Date d'affectation")
                 ->default(now())
-                ->maxDate(now())
+                ->maxDate(function () {
+                    return auth()->user()?->hasRole('admin') ? null : now();
+                })
                 ->required(),
 
             Textarea::make('observations')

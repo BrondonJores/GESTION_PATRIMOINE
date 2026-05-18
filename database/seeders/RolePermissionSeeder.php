@@ -132,4 +132,5 @@ class RolePermissionSeeder extends Seeder
             'view categories',
         ]);
     }
+
 }

@@ -22,10 +22,11 @@ class SalleForm
                 ->required()
                 ->maxLength(100),
 
-            TextInput::make('capacite')
-                ->label('Capacité')
-                ->numeric()
-                ->minValue(1),
+           TextInput::make('capacite')
+                   ->label('Capacité')
+                  ->numeric()
+                  ->minValue(1)
+                  ->required(),
 
             Select::make('bloc_id')
                 ->label('Bloc')
