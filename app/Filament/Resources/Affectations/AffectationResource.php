@@ -18,8 +18,7 @@ class AffectationResource extends Resource
 {
     protected static ?string $model = Affectation::class;
     protected static ?string $navigationLabel = 'Affectations';
-
-    public static function form(Schema $schema): Schema
+  public static function form(Schema $schema): Schema
     {
         return AffectationForm::configure($schema);
     }
@@ -27,15 +26,6 @@ class AffectationResource extends Resource
     public static function table(Table $table): Table
     {
         return AffectationsTable::configure($table);
-    }
-
-    public static function getPages(): array
-    {
-        return [
-            'index'  => ListAffectations::route('/'),
-            'create' => CreateAffectation::route('/create'),
-            'edit'   => EditAffectation::route('/{record}/edit'),
-        ];
     }
 
     public static function canViewAny(): bool
@@ -48,15 +38,25 @@ class AffectationResource extends Resource
         return Auth::user()?->can('create affectations') ?? false;
     }
 
+    // Une affectation clôturée ne peut plus être modifiée
     public static function canEdit(Model $record): bool
     {
         return (Auth::user()?->can('update affectations') ?? false)
-            && is_null($record->date_recuperation);
+            && $record->estActive()
+            && $record->estPourArticle(); // les consommables sont immédiatement clôturés
     }
 
     public static function canDelete(Model $record): bool
     {
-        return (Auth::user()?->can('delete affectations') ?? false)
-            && !is_null($record->date_recuperation);
+        return false; // pas de suppression — traçabilité obligatoire
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index'  => ListAffectations::route('/'),
+            'create' => CreateAffectation::route('/create'),
+            'edit'   => EditAffectation::route('/{record}/edit'),
+        ];
     }
 }

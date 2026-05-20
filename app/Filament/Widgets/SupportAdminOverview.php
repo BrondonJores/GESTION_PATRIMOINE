@@ -18,7 +18,7 @@ class SupportAdminOverview extends StatsOverviewWidget
 {
     protected ?string $heading = 'Supervision';
 
-    protected ?string $description = 'État rapide des alertes, notifications, rapports et journaux.';
+    protected ?string $description = 'État rapide des alertes, notifications, rapports , journaux et articles.';
 
     /**
      * @return array<Stat>

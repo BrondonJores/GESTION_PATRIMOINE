@@ -59,7 +59,7 @@ class ArticleResource extends Resource
         return $user 
     ? (
         $user->hasRole('admin') ||
-        ($user->can('update articles') && !$record->is_archived)
+        ($user->can('update articles') && !$record->estReforme())
       ) 
     : false;
     }

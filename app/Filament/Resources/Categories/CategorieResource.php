@@ -7,6 +7,8 @@ use App\Filament\Resources\Categories\Pages\EditCategorie;
 use App\Filament\Resources\Categories\Pages\ListCategories;
 use App\Filament\Resources\Categories\Schemas\CategorieForm;
 use App\Filament\Resources\Categories\Tables\CategoriesTable;
+use App\Filament\Resources\Categories\Pages\ListCategoriesConsommables;
+use App\Filament\Resources\Categories\Pages\ListCategoriesEquipements;
 use App\Models\Categorie;
 use App\Models\User;
 use BackedEnum;
@@ -30,7 +32,7 @@ class CategorieResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return CategoriesTable::configure($table);
+       return $table;
     }
 
     public static function canViewAny(): bool
@@ -71,9 +73,14 @@ class CategorieResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => ListCategories::route('/'),
-            'create' => CreateCategorie::route('/create'),
-            'edit' => EditCategorie::route('/{record}/edit'),
+            // Page par défaut : équipements
+            'index'         => ListCategoriesEquipements::route('/'),
+
+            // Page consommables — URL différente
+            'consommables'  => ListCategoriesConsommables::route('/consommables'),
+
+            'create'        => CreateCategorie::route('/create'),
+            'edit'          => EditCategorie::route('/{record}/edit'),
         ];
     }
 }

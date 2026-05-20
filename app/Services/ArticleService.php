@@ -1,103 +1,113 @@
 <?php
+// app/Services/ArticleService.php
 
 namespace App\Services;
 
 use App\Models\Article;
-use App\Models\Stock;
 use Exception;
-use Illuminate\Support\Facades\DB;
 
 class ArticleService
 {
     public function valider(array $data, ?Article $article = null): void
     {
-        $quantite    = isset($data['quantite_totale'])
-                       ? (int) $data['quantite_totale']
-                       : null;
-        $quantiteMin = isset($data['quantite_min'])
-                       ? (int) $data['quantite_min']
-                       : null;
-
-        if (!is_null($quantite) && $quantite <= 0) {
-            throw new Exception("La quantité totale doit être supérieure à zéro.");
-        }
-
-        if (!is_null($quantiteMin) && !is_null($quantite)) {
-            if ($quantiteMin >= $quantite) {
+        // Un article réformé est intouchable sauf par l'admin
+        if ($article?->estReforme()) {
+            if (!auth()->user()?->hasRole('admin')) {
                 throw new Exception(
-                    "Le seuil minimal ({$quantiteMin}) doit être " .
-                    "inférieur à la quantité totale ({$quantite})."
-                );
-            }
-        }
-
-        // Lors d'une modification : vérifier que la nouvelle quantité totale
-        // ne descend pas en dessous des unités déjà sorties (affectées + maintenance + réformées)
-        if ($article && !is_null($quantite)) {
-            $stocksOccupes = Stock::quantitePour($article->id, Stock::AFFECTE)
-                           + Stock::quantitePour($article->id, Stock::MAINTENANCE)
-                           + Stock::quantitePour($article->id, Stock::REFORME);
-
-            if ($quantite < $stocksOccupes) {
-                throw new Exception(
-                    "La quantité totale ({$quantite}) ne peut pas être inférieure " .
-                    "aux unités déjà sorties — affectées + maintenance + réformées : {$stocksOccupes}."
+                    "Un article réformé ne peut pas être modifié. " .
+                    "Contactez l'administrateur."
                 );
             }
         }
     }
 
-
- /**
- * Synchroniser le stock Disponible après modification de quantite_totale.
- *
- * Nouvelle logique métier :
- *   disponible = total - affecté - maintenance - réformé
- *
- * Les stocks Affecté / Maintenance / Réformé ne changent jamais ici —
- * ils représentent des unités déjà utilisées, indisponibles ou hors service.
- */
-public function synchroniserStockDisponible(Article $article): void
-{
-    DB::transaction(function () use ($article) {
-        $affecte     = Stock::quantitePour($article->id, Stock::AFFECTE);
-        $maintenance = Stock::quantitePour($article->id, Stock::MAINTENANCE);
-        $reforme     = Stock::quantitePour($article->id, Stock::REFORME);
-
-        $nouveauDisponible = $article->quantite_totale
-                           - $affecte
-                           - $maintenance
-                           - $reforme;
-
-        if ($nouveauDisponible < 0) {
+    // Disponible → En_maintenance
+    public function mettreEnMaintenance(Article $article, string $motif): void
+    {
+        if (!$article->estDisponible()) {
             throw new Exception(
-                "La quantité totale ({$article->quantite_totale}) est inférieure " .
-                "aux unités déjà sorties — affectées ({$affecte}) + " .
-                "maintenance ({$maintenance}) + réformées ({$reforme})."
+                "Seul un article disponible peut être mis en maintenance. " .
+                "Statut actuel : {$article->statut}."
             );
         }
 
-        Stock::updateOrCreate(
-            ['article_id' => $article->id, 'statut' => Stock::DISPONIBLE],
-            ['quantite'   => $nouveauDisponible]
-        );
-    });
-}
+        $article->update([
+            'statut'       => Article::MAINTENANCE,
+            'observations' => trim(
+                ($article->observations ?? '') . "\n[MAINTENANCE] {$motif}"
+            ),
+        ]);
+    }
+
+    // En_maintenance → Disponible
+    public function retourMaintenance(Article $article): void
+    {
+        if (!$article->estEnMaintenance()) {
+            throw new Exception("Cet article n'est pas en maintenance.");
+        }
+
+        $article->update(['statut' => Article::DISPONIBLE]);
+    }
+
+    // Disponible ou En_maintenance → Réformé (irréversible)
+    public function reformer(Article $article, string $motif): void
+    {
+        if ($article->estAffecte()) {
+            throw new Exception(
+                "Impossible de réformer un article affecté. Récupérez-le d'abord."
+            );
+        }
+
+        if ($article->estReforme()) {
+            throw new Exception("Cet article est déjà réformé.");
+        }
+
+        $article->update([
+            'statut'       => Article::REFORME,
+            'observations' => trim(
+                ($article->observations ?? '') . "\n[RÉFORME] {$motif}"
+            ),
+        ]);
+    }
+
+    // RÉINTÉGRER
+    // Réformé → Disponible
+    // Réservé exclusivement à l'administrateur
+    // Cas d'usage : erreur de réforme, article réparé externement
+    public function reintegrer(Article $article, string $motif): void
+    {
+        // Sécurité : uniquement l'admin peut réintégrer
+        if (!auth()->user()?->hasRole('admin')) {
+            throw new Exception(
+                "Action réservée à l'administrateur."
+            );
+        }
+
+        // L'article doit être réformé pour pouvoir être réintégré
+        if (!$article->estReforme()) {
+            throw new Exception(
+                "Seul un article réformé peut être réintégré. " .
+                "Statut actuel : {$article->statut}."
+            );
+        }
+
+        $article->update([
+            'statut'       => Article::DISPONIBLE,
+            'observations' => trim(
+                ($article->observations ?? '') .
+                "\n[RÉINTÉGRATION] {$motif}"
+            ),
+        ]);
+    }
+    // Statistiques — calcul direct sur article.statut
     public function getStatistiques(): array
     {
-        // Sous seuil = articles actifs dont stock Disponible <= quantite_min
-        $sousSeuilCount = Article::where('is_archived', false)
-            ->whereNotNull('quantite_min')
-            ->get()
-            ->filter(fn ($a) =>
-                Stock::quantitePour($a->id, Stock::DISPONIBLE) <= (int) $a->quantite_min
-            )->count();
-
         return [
-            'total'      => Article::count(),
-            'actifs'     => Article::where('is_archived', false)->count(),
-            'archives'   => Article::where('is_archived', true)->count(),
-            'sous_seuil' => $sousSeuilCount,
+            'total'          => Article::whereNotIn('statut', [Article::REFORME])->count(),
+            'disponibles'    => Article::where('statut', Article::DISPONIBLE)->count(),
+            'affectes'       => Article::where('statut', Article::AFFECTE)->count(),
+            'en_maintenance' => Article::where('statut', Article::MAINTENANCE)->count(),
+            'reformes'       => Article::where('statut', Article::REFORME)->count(),
         ];
     }
 }

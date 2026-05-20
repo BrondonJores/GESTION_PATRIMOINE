@@ -1,39 +1,44 @@
 <?php
 
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Affectation extends Model
 {
     protected $fillable = [
-        'quantite',
-        'observations',
-        'date_recuperation',
-        'date_affectation',
+        'type',
         'article_id',
-        'bloc_id',
+        'consommable_id',
         'salle_id',
+        'quantite',
+        'date_affectation',
+        'date_recuperation',
+        'observations',
         'user_id',
     ];
 
     protected $casts = [
         'quantite'          => 'integer',
-        'date_recuperation' => 'date',
         'date_affectation'  => 'date',
+        'date_recuperation' => 'date',
     ];
+
+    // ── Relations ──────────────────────────────────────────────────
 
     public function article(): BelongsTo
     {
         return $this->belongsTo(Article::class);
     }
 
-    public function bloc(): BelongsTo
+    public function consommable(): BelongsTo
     {
-        return $this->belongsTo(Bloc::class);
+        return $this->belongsTo(Consommable::class);
     }
+
+    
 
     public function salle(): BelongsTo
     {
@@ -45,18 +50,35 @@ class Affectation extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function reaffectations(): HasMany
+    // ── Helpers ────────────────────────────────────────────────────
+
+    public function estPourArticle(): bool
     {
-        return $this->hasMany(Reaffectation::class);
+        return $this->type === 'article';
     }
 
-    public function recuperations(): HasMany
+    public function estPourConsommable(): bool
     {
-        return $this->hasMany(Recuperation::class);
+        return $this->type === 'consommable';
     }
 
-    public function getEstActiveAttribute(): bool
+    public function estActive(): bool
     {
         return is_null($this->date_recuperation);
+    }
+
+    // Label affiché dans la liste
+    public function getLabelAttribute(): string
+    {
+        return $this->estPourArticle()
+            ? ($this->article?->designation ?? '—')
+            : ($this->consommable?->designation ?? '—');
+    }
+
+    public function getReferenceAttribute(): string
+    {
+        return $this->estPourArticle()
+            ? ($this->article?->numero_reference ?? '—')
+            : ($this->consommable?->reference ?? '—');
     }
 }

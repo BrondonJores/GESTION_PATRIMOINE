@@ -1,4 +1,5 @@
 <?php
+// app/Filament/Resources/Articles/Pages/ListArticles.php
 
 namespace App\Filament\Resources\Articles\Pages;
 

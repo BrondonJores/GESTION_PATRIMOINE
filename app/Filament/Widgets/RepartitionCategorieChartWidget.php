@@ -12,8 +12,9 @@ class RepartitionCategorieChartWidget extends ChartWidget
 
      protected function getData(): array
     {
+    // Compter les articles actifs (non réformés) par famille
         $data = Article::query()
-            ->where('is_archived', false)
+            ->whereNotIn('statut', [Article::REFORME])
             ->join('categories', 'articles.categorie_id', '=', 'categories.id')
             ->join('familles', 'categories.famille_id', '=', 'familles.id')
             ->selectRaw('familles.nom_famille as label, COUNT(articles.id) as total')
@@ -21,18 +22,17 @@ class RepartitionCategorieChartWidget extends ChartWidget
             ->orderByDesc('total')
             ->get();
 
-        $total = $data->sum('total');
-
-        $labels = $data->map(fn ($row) =>
-            $row->label . ' ' . ($total > 0 ? round(($row->total/$total)*100) : 0) . '%'
+        $total  = $data->sum('total');
+        $labels = $data->map(fn ($r) =>
+            $r->label . ' ' . ($total > 0 ? round(($r->total / $total) * 100) : 0) . '%'
         )->toArray();
 
         return [
             'datasets' => [[
                 'data'            => $data->pluck('total')->toArray(),
                 'backgroundColor' => [
-                    '#1B4332','#2D6A4F','#40916C',
-                    '#52B788','#74C69D','#95D5B2','#B7E4C7',
+                    '#1B4332', '#2D6A4F', '#40916C',
+                    '#52B788', '#74C69D', '#95D5B2', '#B7E4C7',
                 ],
                 'borderColor' => '#FFFFFF',
                 'borderWidth' => 2,

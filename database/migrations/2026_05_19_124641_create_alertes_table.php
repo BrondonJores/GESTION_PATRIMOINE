@@ -18,7 +18,7 @@ return new class extends Migration
         $table->text('retour')->nullable();
         $table->datetime('date_alerte');
         $table->datetime('date_traitement')->nullable();
-        $table->foreignId('article_id')->constrained('articles')->onDelete('cascade');
+        $table->foreignId('consommable_id')->constrained('consommables')->onDelete('cascade');
         $table->timestamps();
     });
 }

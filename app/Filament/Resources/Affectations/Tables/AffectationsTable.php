@@ -1,15 +1,15 @@
 <?php
+// app/Filament/Resources/Affectations/Tables/AffectationsTable.php
 
 namespace App\Filament\Resources\Affectations\Tables;
 
+use App\Models\Affectation;
 use App\Models\Bloc;
 use App\Models\Salle;
 use App\Services\AffectationService;
 use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\EditAction;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -27,13 +27,38 @@ class AffectationsTable
     {
         return $table
             ->columns([
-                TextColumn::make('article.designation')
-                    ->label('Article')
-                    ->searchable(),
+                // Type de ressource
+                TextColumn::make('type')
+                    ->label('Type')
+                    ->badge()
+                    ->color(fn (string $state) => match ($state) {
+                        'article'     => 'primary',
+                        'consommable' => 'warning',
+                        default       => 'gray',
+                    })
+                    ->formatStateUsing(fn (string $state) => match ($state) {
+                        'article'     => 'Équipement',
+                        'consommable' => 'Consommable',
+                        default       => $state,
+                    }),
 
-                TextColumn::make('article.numero_reference')
+                // Désignation — article ou consommable selon le type
+                TextColumn::make('label')
+                    ->label('Ressource')
+                    ->getStateUsing(fn (Affectation $r) => $r->label)
+                    ->searchable(query: function (Builder $query, string $search) {
+                        $query->whereHas('article', fn ($q) =>
+                            $q->where('designation', 'like', "%{$search}%")
+                              ->orWhere('numero_reference', 'like', "%{$search}%")
+                        )->orWhereHas('consommable', fn ($q) =>
+                            $q->where('designation', 'like', "%{$search}%")
+                        );
+                    }),
+
+                // Référence
+                TextColumn::make('reference')
                     ->label('Référence')
-                    ->searchable(),
+                    ->getStateUsing(fn (Affectation $r) => $r->reference),
 
                 TextColumn::make('bloc.nom_bloc')
                     ->label('Bloc'),
@@ -43,112 +68,60 @@ class AffectationsTable
                     ->placeholder('Tout le bloc'),
 
                 TextColumn::make('quantite')
-                    ->label('Quantité'),
+                    ->label('Qté'),
 
                 TextColumn::make('date_affectation')
                     ->label('Date affectation')
                     ->date('d/m/Y')
                     ->sortable(),
 
-                TextColumn::make('date_recuperation')
+                // Statut : active ou clôturée
+                TextColumn::make('statut_affectation')
                     ->label('Statut')
-                    ->date('d/m/Y')
-                    ->placeholder('Active')
-                    ->sortable(),
+                    ->getStateUsing(fn (Affectation $r) =>
+                        $r->estActive() ? 'Active' : 'Clôturée'
+                    )
+                    ->badge()
+                    ->color(fn (string $state) => match ($state) {
+                        'Active'    => 'success',
+                        'Clôturée'  => 'gray',
+                        default     => 'gray',
+                    }),
 
                 TextColumn::make('user.name')
                     ->label('Responsable'),
             ])
+
             ->filters([
+                SelectFilter::make('type')
+                    ->label('Type')
+                    ->options([
+                        'article'     => 'Équipements',
+                        'consommable' => 'Consommables',
+                    ]),
+
                 Filter::make('actives')
                     ->label('Actives uniquement')
-                    ->query(fn (Builder $query) => $query->whereNull('date_recuperation'))
+                    ->query(fn (Builder $q) =>
+                        $q->whereNull('date_recuperation')
+                    )
                     ->toggle(),
 
                 SelectFilter::make('bloc_id')
                     ->label('Bloc')
                     ->options(Bloc::pluck('nom_bloc', 'id')->toArray()),
-
-                SelectFilter::make('article_id')
-                    ->label('Article')
-                    ->relationship('article', 'designation'),
             ])
+
             ->recordActions([
-                // ── RÉAFFECTER ──────────────────────────────────────
-                Action::make('reaffecter')
-                    ->label('Réaffecter')
-                    ->icon('heroicon-o-arrows-right-left')
-                    ->color('warning')
-                    ->modal()
-                    ->modalHeading('Réaffecter vers un autre bloc/salle')
-                    ->form([
-                        Select::make('bloc_id')
-                            ->label('Nouveau bloc')
-                            ->options(Bloc::where('actif', true)->pluck('nom_bloc', 'id')->toArray())
-                            ->searchable()
-                            ->required()
-                            ->live()
-                            ->afterStateUpdated(fn (Select $component) => $component
-                                ->getContainer()
-                                ->getComponent('salle_id')
-                                ?->state(null)
-                            ),
-
-                        Select::make('salle_id')
-                            ->label('Nouvelle salle (optionnelle)')
-                            ->options(function ($get) {
-                                $blocId = $get('bloc_id');
-                                if (!$blocId) return [];
-                                return Salle::where('bloc_id', $blocId)
-                                    ->where('actif', true)
-                                    ->pluck('nom_salle', 'id')
-                                    ->toArray();
-                            })
-                            ->searchable()
-                            ->placeholder('-- Tout le bloc --'),
-
-                        TextInput::make('quantite')
-                            ->label('Quantité à réaffecter')
-                            ->numeric()
-                            ->minValue(1)
-                            ->required(),
-
-                        Textarea::make('observations')
-                            ->label('Observations')
-                            ->rows(3),
-                    ])
-                    ->action(function ($record, array $data) {
-                        try {
-                            app(AffectationService::class)->reaffecter($record, $data);
-                            Notification::make()
-                                ->title('Réaffectation effectuée avec succès')
-                                ->success()
-                                ->send();
-                        } catch (\Exception $e) {
-                            Notification::make()
-                                ->title('Erreur')
-                                ->body($e->getMessage())
-                                ->danger()
-                                ->persistent()
-                                ->send();
-                        }
-                    })
-                    ->visible(fn ($record) => is_null($record->date_recuperation)),
-
-                // ── RÉCUPÉRER ────────────────────────────────────────
+                // ── RÉCUPÉRER (articles uniquement) ───────────────
                 Action::make('recuperer')
                     ->label('Récupérer')
                     ->icon('heroicon-o-arrow-uturn-left')
                     ->color('success')
-                    ->modal()
-                    ->modalHeading('Récupérer au stock')
+                    ->visible(fn (Affectation $r) =>
+                        $r->estPourArticle() && $r->estActive()
+                    )
                     ->form([
-                        TextInput::make('quantite')
-                            ->label('Quantité à récupérer')
-                            ->numeric()
-                            ->minValue(1)
-                            ->required(),
-
                         DatePicker::make('date_recuperation')
                             ->label('Date de récupération')
                             ->default(now())
@@ -157,38 +130,73 @@ class AffectationsTable
 
                         Textarea::make('observations')
                             ->label('Observations')
-                            ->rows(3),
+                            ->rows(2),
                     ])
-                    ->action(function ($record, array $data) {
+                    ->action(function (Affectation $record, array $data) {
                         try {
                             app(AffectationService::class)->recuperer($record, $data);
                             Notification::make()
-                                ->title('Récupération effectuée avec succès')
-                                ->success()
-                                ->send();
+                                ->title('Récupération enregistrée')
+                                ->success()->send();
                         } catch (\Exception $e) {
                             Notification::make()
                                 ->title('Erreur')
                                 ->body($e->getMessage())
-                                ->danger()
-                                ->persistent()
-                                ->send();
+                                ->danger()->send();
                         }
-                    })
-                    ->visible(fn ($record) => is_null($record->date_recuperation)),
+                    }),
 
-                // ── EDIT / DELETE ────────────────────────────────────
-                EditAction::make()
-                    ->visible(fn ($record) => is_null($record->date_recuperation)),
+                // ── RÉAFFECTER (articles uniquement) ──────────────
+                Action::make('reaffecter')
+                    ->label('Réaffecter')
+                    ->icon('heroicon-o-arrows-right-left')
+                    ->color('warning')
+                    ->visible(fn (Affectation $r) =>
+                        $r->estPourArticle() && $r->estActive()
+                    )
+                    ->form([
+                        Select::make('bloc_id')
+                            ->label('Nouveau bloc')
+                            ->options(
+                                Bloc::where('actif', true)->pluck('nom_bloc', 'id')
+                            )
+                            ->required()
+                            ->live(),
 
-                DeleteAction::make()
-                    ->requiresConfirmation(),
+                        Select::make('salle_id')
+                            ->label('Nouvelle salle (optionnelle)')
+                            ->options(fn ($get) =>
+                                $get('bloc_id')
+                                    ? Salle::where('bloc_id', $get('bloc_id'))
+                                        ->where('actif', true)
+                                        ->pluck('nom_salle', 'id')
+                                        ->toArray()
+                                    : []
+                            )
+                            ->placeholder('-- Tout le bloc --'),
+
+                        Textarea::make('observations')
+                            ->label('Observations')
+                            ->rows(2),
+                    ])
+                    ->action(function (Affectation $record, array $data) {
+                        try {
+                            app(AffectationService::class)->reaffecter($record, $data);
+                            Notification::make()
+                                ->title('Réaffectation enregistrée')
+                                ->success()->send();
+                        } catch (\Exception $e) {
+                            Notification::make()
+                                ->title('Erreur')
+                                ->body($e->getMessage())
+                                ->danger()->send();
+                        }
+                    }),
             ])
             ->actionsColumnLabel('Actions')
             ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+                BulkActionGroup::make([]),
+            ])
+            ->defaultSort('date_affectation', 'desc');
     }
 }

@@ -3,71 +3,63 @@
 namespace App\Filament\Widgets;
 
 
-use App\Models\Alerte;
+
 use App\Models\Article;
-use App\Models\Stock;
+use App\Models\Consommable;
+use App\Models\Categorie;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class StatsOverviewWidget extends BaseWidget
 {
+      protected  ?string $heading = 'Répartition des équipements par statut';
     protected static ?int $sort = 10;
 
     // Rafraîchissement automatique toutes les 30 secondes
     protected  ?string $pollingInterval = '30s';
 
-     protected function getStats(): array
+      
+    protected function getStats(): array
     {
-        $total       = Article::count();
-        $actifs      = Article::where('is_archived', false)->count();
-        $archives    = Article::where('is_archived', true)->count();
+        // ── ÉQUIPEMENTS ────────────────────────────────────────────
+        // On affiche uniquement le total global
+        // Le détail par statut est dans le graphe doughnut
+        $totalEquipements = Article::count();
+        $reformes         = Article::where('statut', Article::REFORME)->count();
+        $totalActifs      = $totalEquipements - $reformes;
 
-        // Stock disponible total (somme de toutes les lignes Disponible)
-        $disponible  = Stock::where('statut', 'Disponible')->sum('quantite');
-        $affecte     = Stock::where('statut', 'Affecté')->sum('quantite');
-        $maintenance = Stock::where('statut', 'En_maintenance')->sum('quantite');
-        $reforme     = Stock::where('statut', 'Réformé')->sum('quantite');
-
-        // Articles dont le stock disponible <= seuil minimal
-        $sousSeuilCount = Article::where('is_archived', false)
-            ->whereNotNull('quantite_min')
-            ->whereHas('stocks', fn ($q) =>
-                $q->where('statut', 'Disponible')
-                  ->whereColumn('stocks.quantite', '<=', 'articles.quantite_min')
-            )->count();
-
-        $alertesNT = Alerte::where('statut', 'Non_traité')->count();
+        // ── CONSOMMABLES ───────────────────────────────────────────
+        // On affiche le détail : total / sous seuil / épuisés
+        // C'est ce qui intéresse pour la gestion des stocks
+        $consoTotal     = Consommable::count();
+        $consoSousSeuil = Consommable::where('statut', 'Sous seuil')->count();
+        $consoEpuises   = Consommable::where('statut', 'Épuisé')->count();
 
         return [
-            Stat::make('Total Articles', $total)
-                ->description("{$actifs} actif(s) — {$archives} archivé(s)")
+
+            // ── 1. Total équipements ───────────────────────────────
+            Stat::make('Équipements dans le parc', $totalActifs)
+                ->description("{$reformes} réformé(s) non comptabilisé(s)")
                 ->descriptionIcon('heroicon-m-archive-box')
                 ->color('primary'),
 
-            Stat::make('Stock Disponible', $disponible)
-                ->description('Unités disponibles en dépôt')
-                ->descriptionIcon('heroicon-m-check-circle')
-                ->color('success'),
+            // ── 2. Total consommables ──────────────────────────────
+            Stat::make('Références consommables', $consoTotal)
+                ->description('Nombre total de références enregistrées')
+                ->descriptionIcon('heroicon-m-beaker')
+                ->color('primary'),
 
-            Stat::make('Affectations actives', $affecte)
-                ->description('Unités actuellement dans les salles')
-                ->descriptionIcon('heroicon-m-arrow-right-circle')
-                ->color('warning'),
+            // ── 3. Consommables sous seuil ─────────────────────────
+            Stat::make('Sous seuil minimal', $consoSousSeuil)
+                ->description('Références à réapprovisionner bientôt')
+                ->descriptionIcon('heroicon-m-exclamation-circle')
+                ->color($consoSousSeuil > 0 ? 'warning' : 'success'),
 
-            Stat::make('En Maintenance', $maintenance)
-                ->description('Unités temporairement indisponibles')
-                ->descriptionIcon('heroicon-m-wrench-screwdriver')
-                ->color('gray'),
-
-            Stat::make('Réformés', $reforme)
-                ->description('Unités hors service définitif')
+            // ── 4. Consommables épuisés ────────────────────────────
+            Stat::make('Épuisés', $consoEpuises)
+                ->description('Références sans stock disponible')
                 ->descriptionIcon('heroicon-m-x-circle')
-                ->color('danger'),
-
-            Stat::make('Sous Seuil Minimal', $sousSeuilCount)
-                ->description($alertesNT . ' alerte(s) non traitée(s)')
-                ->descriptionIcon('heroicon-m-exclamation-triangle')
-                ->color($sousSeuilCount > 0 ? 'danger' : 'success'),
+                ->color($consoEpuises > 0 ? 'danger' : 'success'),
         ];
     }
-}
+    }

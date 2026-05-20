@@ -10,17 +10,17 @@ class Article extends Model
         'numero_reference',
         'code_ancien',
         'designation',
-        'quantite_totale',
-        'quantite_min',
+        'statut', 
         'observations',
-        'is_archived',
         'categorie_id',
     ];
 
-      protected $casts = [
-        'quantite_totale' => 'integer',
-        'quantite_min' => 'integer',
-    ];
+        // Constantes statut — évite les strings magiques partout dans le code
+    const DISPONIBLE    = 'Disponible';
+    const AFFECTE       = 'Affecté';
+    const MAINTENANCE   = 'En_maintenance';
+    const REFORME       = 'Réformé';
+
     public function categorie()
     {
         return $this->belongsTo(Categorie::class);
@@ -31,46 +31,34 @@ class Article extends Model
         return $this->hasMany(Affectation::class);
     }
 
-    public function alertes()
-    {
-        return $this->hasMany(Alerte::class);
-    }
-      public function stocks()
-    {
-        return $this->hasMany(Stock::class);
-    }
-
+    
 
     
-    public function getDisponibleAttribute(): int
+    // ── Helpers ────────────────────────────────────────────────────
+
+    public function estDisponible(): bool
     {
-        return Stock::quantitePour($this->id, Stock::DISPONIBLE);
+        return $this->statut === self::DISPONIBLE;
     }
 
-    public function getAffecteAttribute(): int
+    public function estAffecte(): bool
     {
-        return Stock::quantitePour($this->id, Stock::AFFECTE);
+        return $this->statut === self::AFFECTE;
     }
 
-    public function getEnMaintenanceAttribute(): int
+    public function estEnMaintenance(): bool
     {
-        return Stock::quantitePour($this->id, Stock::MAINTENANCE);
+        return $this->statut === self::MAINTENANCE;
     }
 
-    public function getReformeAttribute(): int
+    public function estReforme(): bool
     {
-        return Stock::quantitePour($this->id, Stock::REFORME);
+        return $this->statut === self::REFORME;
     }
 
-    public function getStatutGlobalAttribute(): string
+    // Un article réformé est définitivement hors service
+    public function estArchive(): bool
     {
-        return $this->is_archived ? 'Archivé' : 'Actif';
-    }
-
-    public function peutEtreArchive(): bool
-    {
-        return $this->disponible     === 0
-            && $this->affecte        === 0
-            && $this->en_maintenance === 0;
+        return $this->statut === self::REFORME;
     }
 }
