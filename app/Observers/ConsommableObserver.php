@@ -57,14 +57,13 @@ class ConsommableObserver
                         ->exists();
         if ($existe) return;
 
-        Alerte::create([
-            'consommable_id' => $consommable->id,
-            'article_id'     => null,
-            'statut'         => 'Non_traité',
-            'canal'          => $canal,
-            'retour'         => $retour,
-            'date_alerte'    => now(),
-        ]);
+       Alerte::create([
+    'consommable_id' => $consommable->id,
+    'statut'         => 'Non_traité',
+    'canal'          => $canal,
+    'retour'         => $retour,
+    'date_alerte'    => now(),
+     ]);
 
     }
 }

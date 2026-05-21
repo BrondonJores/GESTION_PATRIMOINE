@@ -9,6 +9,8 @@ use Filament\Resources\Pages\ListRecords;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Filament\Actions\Action;
+
 use Filament\Actions\EditAction;
 
 class ListCategoriesConsommables extends ListRecords
@@ -23,6 +25,12 @@ class ListCategoriesConsommables extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+              // Retour vers toutes les catégories
+            Action::make('toutes_categories')
+                ->label('Toutes les catégories')
+                ->icon('heroicon-m-list-bullet')
+                ->color('gray')
+                ->url(CategorieResource::getUrl('index')),
             // Lien retour vers équipements
             \Filament\Actions\Action::make('voir_equipements')
                 ->label('Voir les équipements')

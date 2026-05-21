@@ -6,6 +6,8 @@ namespace App\Filament\Resources\Categories\Pages;
 use App\Filament\Resources\Categories\CategorieResource;
 use App\Models\Article;
 use App\Models\Categorie;
+use Filament\Actions\Action;
+
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Tables\Columns\TextColumn;
@@ -26,6 +28,12 @@ class ListCategoriesEquipements extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+             // Retour vers toutes les catégories
+            Action::make('toutes_categories')
+                ->label('Toutes les catégories')
+                ->icon('heroicon-m-list-bullet')
+                ->color('gray')
+                ->url(CategorieResource::getUrl('index')),
             // Lien vers la page consommables
             \Filament\Actions\Action::make('voir_consommables')
                 ->label('Voir les consommables')

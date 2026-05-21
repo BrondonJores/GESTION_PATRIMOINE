@@ -55,15 +55,6 @@ class ArticlesTable
                         'Réformé'       => 'danger',
                         default         => 'gray',
                     }),
-
-                // Localisation via la dernière affectation active
-                // [CODE AFFECTATIONS - commenté car dépend du module Membre 2]
-                // TextColumn::make('localisationActuelle.bloc.nom_bloc')
-                //     ->label('Bloc actuel')
-                //     ->placeholder('—'),
-                // TextColumn::make('localisationActuelle.salle.nom_salle')
-                //     ->label('Salle actuelle')
-                //     ->placeholder('—'),
             ])
 
             ->filters([

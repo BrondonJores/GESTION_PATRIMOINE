@@ -55,7 +55,7 @@ class CategoriesTable
 
             ->columns([
 
-                // ── Colonnes communes (toujours visibles) ──────────
+                //  Colonnes communes (toujours visibles)
 
                 TextColumn::make('famille.nom_famille')
                     ->label('Famille')

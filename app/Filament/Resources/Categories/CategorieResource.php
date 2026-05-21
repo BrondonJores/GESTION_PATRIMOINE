@@ -73,14 +73,17 @@ class CategorieResource extends Resource
     public static function getPages(): array
     {
         return [
-            // Page par défaut : équipements
-            'index'         => ListCategoriesEquipements::route('/'),
+            //Page par défaut : toutes les catégories
+             'index'  => ListCategories::route('/'),
 
-            // Page consommables — URL différente
-            'consommables'  => ListCategoriesConsommables::route('/consommables'),
+            // Page statistiques équipements
+            'equipements'  => ListCategoriesEquipements::route('/equipements'),
 
-            'create'        => CreateCategorie::route('/create'),
-            'edit'          => EditCategorie::route('/{record}/edit'),
+            // Page statistiques consommables
+            'consommables' => ListCategoriesConsommables::route('/consommables'),
+
+            'create' => CreateCategorie::route('/create'),
+            'edit'   => EditCategorie::route('/{record}/edit'),
         ];
     }
 }
