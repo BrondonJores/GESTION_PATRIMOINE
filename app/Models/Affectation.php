@@ -12,6 +12,7 @@ class Affectation extends Model
         'type',
         'article_id',
         'consommable_id',
+         'bloc_id',  
         'salle_id',
         'quantite',
         'date_affectation',
@@ -44,6 +45,10 @@ class Affectation extends Model
     {
         return $this->belongsTo(Salle::class);
     }
+    public function bloc(): BelongsTo
+{
+    return $this->belongsTo(Bloc::class);
+}
 
     public function user(): BelongsTo
     {

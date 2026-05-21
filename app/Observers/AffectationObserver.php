@@ -1,5 +1,4 @@
 <?php
-// app/Observers/AffectationObserver.php
 
 namespace App\Observers;
 
@@ -12,13 +11,9 @@ class AffectationObserver
 {
     public function created(Affectation $affectation): void
     {
-        $action = $affectation->estPourArticle()
-            ? 'Affectation article'
-            : 'Affectation consommable';
-
         LogModel::create([
             'module'      => 'Affectations',
-            'action'      => $action,
+            'action'      => 'Affectation',
             'adresse_ip'  => Request::ip(),
             'user_id'     => Auth::id(),
             'date_action' => now(),
@@ -27,7 +22,7 @@ class AffectationObserver
 
     public function updated(Affectation $affectation): void
     {
-        $action = $affectation->getDirty()['date_recuperation'] ?? null
+        $action = isset($affectation->getDirty()['date_recuperation'])
             ? 'Récupération'
             : 'Modification';
 

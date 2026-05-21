@@ -11,7 +11,8 @@ return new class extends Migration
      */
     public function up(): void
 {
-    Schema::create('alertes', function (Blueprint $table) {
+   if (Schema::hasTable('alertes')) return;
+Schema::create('alertes', function (Blueprint $table) {
         $table->id();
         $table->enum('statut', ['Non_traité', 'En_cours', 'Résolu'])->default('Non_traité');
         $table->enum('canal', ['Email', 'SMS', 'InApp', 'Tous'])->default('Tous');
