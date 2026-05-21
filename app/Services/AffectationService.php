@@ -160,46 +160,52 @@ class AffectationService
     // RÉAFFECTER UN ARTICLE
     // ══════════════════════════════════════════════════════════════
 
-    public function reaffecter(Affectation $affectation, array $data): Affectation
-    {
-        return DB::transaction(function () use ($affectation, $data) {
-            if ($affectation->estPourConsommable()) {
-                throw new Exception("Un consommable ne peut pas être réaffecté.");
-            }
+   public function reaffecter(Affectation $affectation, array $data): Affectation
+{
+    return DB::transaction(function () use ($affectation, $data) {
+        if ($affectation->estPourConsommable()) {
+            throw new Exception("Un consommable ne peut pas être réaffecté.");
+        }
 
-            if (!$affectation->estActive()) {
-                throw new Exception("Cette affectation est déjà terminée.");
-            }
+        if (!$affectation->estActive()) {
+            throw new Exception("Cette affectation est déjà terminée.");
+        }
 
-            // Vérifier la capacité de la nouvelle salle
-            $this->verifierCapaciteSalle($data['salle_id'] ?? null);
+        // Bloquer la réaffectation dans la même salle
+        if ($affectation->salle_id === ($data['salle_id'] ?? null)) {
+            throw new Exception(
+                "L'article est déjà affecté dans cette salle. Choisissez une autre salle."
+            );
+        }
 
-            Reaffectation::create([
-                'affectation_id'     => $affectation->id,
-                'salle_id'           => $data['salle_id'] ?? null,
-                'quantite'           => 1,
-                'observations'       => $data['observations'] ?? null,
-                'date_reaffectation' => now()->toDateString(),
-            ]);
+        // Vérifier la capacité de la nouvelle salle
+        $this->verifierCapaciteSalle($data['salle_id'] ?? null);
 
-            $affectation->update([
-                'date_recuperation' => now()->toDateString(),
-            ]);
+        Reaffectation::create([
+            'affectation_id'     => $affectation->id,
+            'salle_id'           => $data['salle_id'] ?? null,
+            'quantite'           => 1,
+            'observations'       => $data['observations'] ?? null,
+            'date_reaffectation' => now()->toDateString(),
+        ]);
 
-            return Affectation::create([
-                'type'             => 'article',
-                'article_id'       => $affectation->article_id,
-                'consommable_id'   => null,
-                'bloc_id'          => $data['bloc_id'],
-                'salle_id'         => $data['salle_id'] ?? null,
-                'quantite'         => 1,
-                'date_affectation' => now()->toDateString(),
-                'observations'     => $data['observations'] ?? null,
-                'user_id'          => Auth::id(),
-            ]);
-        });
-    }
+        $affectation->update([
+            'date_recuperation' => now()->toDateString(),
+        ]);
 
+        return Affectation::create([
+            'type'             => 'article',
+            'article_id'       => $affectation->article_id,
+            'consommable_id'   => null,
+            'bloc_id'          => $data['bloc_id'],
+            'salle_id'         => $data['salle_id'] ?? null,
+            'quantite'         => 1,
+            'date_affectation' => now()->toDateString(),
+            'observations'     => $data['observations'] ?? null,
+            'user_id'          => Auth::id(),
+        ]);
+    });
+}
     // ══════════════════════════════════════════════════════════════
     // RÉAPPROVISIONNER UN CONSOMMABLE
     // ══════════════════════════════════════════════════════════════
