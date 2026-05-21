@@ -92,25 +92,32 @@ class AffectationsTable
                     ->label('Responsable'),
             ])
 
-            ->filters([
-                SelectFilter::make('type')
-                    ->label('Type')
-                    ->options([
-                        'article'     => 'Équipements',
-                        'consommable' => 'Consommables',
-                    ]),
+           ->filters([
+    SelectFilter::make('type')
+        ->label('Type')
+        ->options([
+            'article'     => 'Équipements',
+            'consommable' => 'Consommables',
+        ]),
 
-                Filter::make('actives')
-                    ->label('Actives uniquement')
-                    ->query(fn (Builder $q) =>
-                        $q->whereNull('date_recuperation')
-                    )
-                    ->toggle(),
+    SelectFilter::make('statut_affectation')
+        ->label('Statut')
+        ->options([
+            'active'   => 'Active',
+            'cloturee' => 'Clôturée',
+        ])
+        ->query(function (Builder $query, array $data) {
+            if ($data['value'] === 'active') {
+                $query->whereNull('date_recuperation');
+            } elseif ($data['value'] === 'cloturee') {
+                $query->whereNotNull('date_recuperation');
+            }
+        }),
 
-                SelectFilter::make('bloc_id')
-                    ->label('Bloc')
-                    ->options(Bloc::pluck('nom_bloc', 'id')->toArray()),
-            ])
+    SelectFilter::make('bloc_id')
+        ->label('Bloc')
+        ->options(Bloc::pluck('nom_bloc', 'id')->toArray()),
+])
 
             ->recordActions([
                 // ── RÉCUPÉRER (articles uniquement) ───────────────

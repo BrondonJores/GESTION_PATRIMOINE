@@ -1,5 +1,4 @@
 <?php
-// app/Services/AffectationService.php
 
 namespace App\Services;
 
@@ -8,6 +7,7 @@ use App\Models\Article;
 use App\Models\Consommable;
 use App\Models\Reaffectation;
 use App\Models\Recuperation;
+use App\Models\Salle;
 use Exception;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -15,9 +15,33 @@ use Illuminate\Support\Facades\DB;
 class AffectationService
 {
     // ══════════════════════════════════════════════════════════════
+    // VÉRIFIER LA CAPACITÉ D'UNE SALLE
+    // ══════════════════════════════════════════════════════════════
+
+    private function verifierCapaciteSalle(?int $salleId): void
+    {
+        if (!$salleId) return;
+
+        $salle = Salle::findOrFail($salleId);
+
+        if (!$salle->capacite) return;
+
+        $nbAffectes = Affectation::where('salle_id', $salleId)
+            ->where('type', 'article')
+            ->whereNull('date_recuperation')
+            ->count();
+
+        if ($nbAffectes >= $salle->capacite) {
+            throw new Exception(
+                "La salle {$salle->nom_salle} est pleine. " .
+                "Capacité maximale : {$salle->capacite} articles. " .
+                "Actuellement : {$nbAffectes} articles affectés."
+            );
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════
     // AFFECTER UN ARTICLE NON CONSOMMABLE
-    // type = article, quantite = 1
-    // Disponible → Affecté sur article.statut
     // ══════════════════════════════════════════════════════════════
 
     public function affecterArticle(array $data): Affectation
@@ -32,19 +56,21 @@ class AffectationService
                 );
             }
 
+            // Vérifier la capacité de la salle
+            $this->verifierCapaciteSalle($data['salle_id'] ?? null);
+
             $affectation = Affectation::create([
                 'type'             => 'article',
                 'article_id'       => $article->id,
                 'consommable_id'   => null,
                 'bloc_id'          => $data['bloc_id'],
                 'salle_id'         => $data['salle_id'] ?? null,
-                'quantite'         => 1, // toujours 1 — unité physique unique
+                'quantite'         => 1,
                 'date_affectation' => $data['date_affectation'] ?? now()->toDateString(),
                 'observations'     => $data['observations'] ?? null,
                 'user_id'          => Auth::id(),
             ]);
 
-            // Changer le statut de l'article
             $article->update(['statut' => Article::AFFECTE]);
 
             return $affectation;
@@ -53,8 +79,6 @@ class AffectationService
 
     // ══════════════════════════════════════════════════════════════
     // AFFECTER UN CONSOMMABLE
-    // type = consommable, quantite = X
-    // Diminue consommable.quantite_stock définitivement
     // ══════════════════════════════════════════════════════════════
 
     public function affecterConsommable(array $data): Affectation
@@ -76,20 +100,18 @@ class AffectationService
             }
 
             $affectation = Affectation::create([
-                'type'             => 'consommable',
-                'article_id'       => null,
-                'consommable_id'   => $consommable->id,
-                'bloc_id'          => $data['bloc_id'],
-                'salle_id'         => $data['salle_id'] ?? null,
-                'quantite'         => $data['quantite'],
-                'date_affectation' => $data['date_affectation'] ?? now()->toDateString(),
-                'date_recuperation'=> now()->toDateString(), // immédiatement clôturée
-                // Un consommable affecté = consommé, pas de récupération
-                'observations'     => $data['observations'] ?? null,
-                'user_id'          => Auth::id(),
+                'type'              => 'consommable',
+                'article_id'        => null,
+                'consommable_id'    => $consommable->id,
+                'bloc_id'           => $data['bloc_id'],
+                'salle_id'          => $data['salle_id'] ?? null,
+                'quantite'          => $data['quantite'],
+                'date_affectation'  => $data['date_affectation'] ?? now()->toDateString(),
+                'date_recuperation' => now()->toDateString(),
+                'observations'      => $data['observations'] ?? null,
+                'user_id'           => Auth::id(),
             ]);
 
-            // Diminuer le stock — ConsommableObserver crée l'alerte si besoin
             $consommable->update([
                 'quantite_stock' => $consommable->quantite_stock - $data['quantite'],
             ]);
@@ -100,8 +122,6 @@ class AffectationService
 
     // ══════════════════════════════════════════════════════════════
     // RÉCUPÉRER UN ARTICLE
-    // Affecté → Disponible
-    // Uniquement pour type = article
     // ══════════════════════════════════════════════════════════════
 
     public function recuperer(Affectation $affectation, array $data): Recuperation
@@ -130,7 +150,6 @@ class AffectationService
                 'date_recuperation' => $data['date_recuperation'] ?? now()->toDateString(),
             ]);
 
-            // Remettre l'article disponible
             $article->update(['statut' => Article::DISPONIBLE]);
 
             return $recuperation;
@@ -139,8 +158,6 @@ class AffectationService
 
     // ══════════════════════════════════════════════════════════════
     // RÉAFFECTER UN ARTICLE
-    // Affecté → Affecté dans une autre salle
-    // Statut article reste Affecté — seule la salle change
     // ══════════════════════════════════════════════════════════════
 
     public function reaffecter(Affectation $affectation, array $data): Affectation
@@ -154,7 +171,9 @@ class AffectationService
                 throw new Exception("Cette affectation est déjà terminée.");
             }
 
-            // Tracer la réaffectation
+            // Vérifier la capacité de la nouvelle salle
+            $this->verifierCapaciteSalle($data['salle_id'] ?? null);
+
             Reaffectation::create([
                 'affectation_id'     => $affectation->id,
                 'salle_id'           => $data['salle_id'] ?? null,
@@ -163,12 +182,10 @@ class AffectationService
                 'date_reaffectation' => now()->toDateString(),
             ]);
 
-            // Clôturer l'ancienne
             $affectation->update([
                 'date_recuperation' => now()->toDateString(),
             ]);
 
-            // Créer la nouvelle — statut article reste Affecté
             return Affectation::create([
                 'type'             => 'article',
                 'article_id'       => $affectation->article_id,
@@ -185,7 +202,6 @@ class AffectationService
 
     // ══════════════════════════════════════════════════════════════
     // RÉAPPROVISIONNER UN CONSOMMABLE
-    // Augmente quantite_stock
     // ══════════════════════════════════════════════════════════════
 
     public function reapprovisionner(

@@ -1,5 +1,4 @@
 <?php
-// app/Filament/Resources/Affectations/Schemas/AffectationForm.php
 
 namespace App\Filament\Resources\Affectations\Schemas;
 
@@ -7,114 +6,116 @@ use App\Models\Article;
 use App\Models\Bloc;
 use App\Models\Consommable;
 use App\Models\Salle;
-use App\Models\Stock;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 
 class AffectationForm
 {
     public static function configure(Schema $schema): Schema
     {
-        return $schema->components([
+        return $schema
+            ->components([
+                Select::make('type')
+                    ->label('Type de ressource')
+                    ->required()
+                    ->options([
+                        'article'     => 'Équipement (table, chaise, ordinateur...)',
+                        'consommable' => 'Consommable (marqueur, papier...)',
+                    ])
+                    ->default('article')
+                    ->helperText('Choisir le type détermine la logique d\'affectation.')
+                    ->live()
+                    ->afterStateUpdated(function (Set $set) {
+                        $set('article_id', null);
+                        $set('consommable_id', null);
+                        $set('quantite', 1);
+                    }),
 
-            // ── Discriminant ───────────────────────────────────────
-            Select::make('type')
-                ->label('Type de ressource')
-                ->options([
-                    'article'      => 'Équipement (table, chaise, ordinateur...)',
-                    'consommable'  => 'Consommable (marqueur, papier...)',
-                ])
-                ->required()
-                ->default('article')
-                ->live() // réactif — affiche/masque les champs selon le type
-                ->helperText('Choisir le type détermine la logique d\'affectation.'),
+                // ── Équipement ──
+               // ── Équipement ──
+                Select::make('article_ids')
+                    ->label('Articles')
+                    ->required(fn(Get $get) => $get('type') === 'article')
+                    ->visible(fn(Get $get) => $get('type') === 'article')
+                    ->options(fn() => Article::where('statut', Article::DISPONIBLE)
+                    ->pluck('designation', 'id'))
+                    ->multiple()
+                    ->searchable()
+                    ->helperText('Sélectionnez un ou plusieurs articles disponibles.')
+                     ->placeholder('Sélectionnez une option'),
 
-            // ── Champ article (visible si type = article) ──────────
-            Select::make('article_id')
-                ->label('Article')
-                ->options(function () {
-                    // Uniquement les articles disponibles
-                    return Article::where('statut', Article::DISPONIBLE)
-                        ->orderBy('designation')
-                        ->get()
-                        ->mapWithKeys(fn ($a) => [
-                            $a->id => "[{$a->numero_reference}] {$a->designation}"
-                        ])
-                        ->toArray();
-                })
-                ->searchable()
-                ->required(fn ($get) => $get('type') === 'article')
-                ->visible(fn ($get) => $get('type') === 'article')
-                ->helperText('Seuls les articles disponibles sont listés.'),
+                // ── Consommable ──
+                Select::make('consommable_id')
+                    ->label('Consommable')
+                    ->required(fn(Get $get) => $get('type') === 'consommable')
+                    ->visible(fn(Get $get) => $get('type') === 'consommable')
+                    ->options(fn() => Consommable::where('quantite_stock', '>', 0)
+                        ->pluck('designation', 'id'))
+                    ->searchable()
+                    ->helperText('Seuls les consommables avec du stock sont listés.')
+                    ->placeholder('Sélectionnez une option'),
 
-            // ── Champ consommable (visible si type = consommable) ──
-            Select::make('consommable_id')
-                ->label('Consommable')
-                ->options(function () {
-                    return Consommable::where('quantite_stock', '>', 0)
-                        ->orderBy('designation')
-                        ->get()
-                        ->mapWithKeys(fn ($c) => [
-                            $c->id => "[{$c->reference}] {$c->designation} — stock: {$c->quantite_stock}"
-                        ])
-                        ->toArray();
-                })
-                ->searchable()
-                ->required(fn ($get) => $get('type') === 'consommable')
-                ->visible(fn ($get) => $get('type') === 'consommable')
-                ->helperText('Seuls les consommables avec du stock sont listés.'),
+                TextInput::make('quantite')
+                    ->label('Quantité')
+                    ->required()
+                    ->numeric()
+                    ->minValue(1)
+                    ->default(1)
+                    ->helperText('Pour un consommable, indiquez la quantité souhaitée.')
+                    ->visible(fn(Get $get) => $get('type') === 'consommable'),
 
-            // ── Quantité (visible uniquement pour les consommables) ─
-            TextInput::make('quantite')
-                ->label('Quantité')
-                ->numeric()
-                ->minValue(1)
-                ->default(1)
-                ->required(fn ($get) => $get('type') === 'consommable')
-                ->visible(fn ($get) => $get('type') === 'consommable')
-                ->helperText('Pour un équipement, la quantité est toujours 1.'),
+                Select::make('bloc_id')
+                    ->label('Bloc')
+                    ->required()
+                    ->options(fn() => Bloc::where('actif', true)->pluck('nom_bloc', 'id'))
+                    ->searchable()
+                    ->live()
+                    ->afterStateUpdated(fn(Set $set) => $set('salle_id', null))
+                    ->placeholder('Sélectionnez une option'),
 
-            // ── Destination ────────────────────────────────────────
-            Select::make('bloc_id')
-                ->label('Bloc')
-                ->options(
-                    Bloc::where('actif', true)
-                        ->orderBy('nom_bloc')
-                        ->pluck('nom_bloc', 'id')
-                        ->toArray()
-                )
-                ->required()
-                ->live(),
+                Select::make('salle_id')
+    ->label('Salle (optionnelle)')
+    ->options(fn(Get $get) => $get('bloc_id')
+        ? Salle::where('bloc_id', $get('bloc_id'))
+            ->where('actif', true)
+            ->get()
+            ->mapWithKeys(function ($salle) {
+                $nbAffectes = \App\Models\Affectation::where('salle_id', $salle->id)
+                    ->where('type', 'article')
+                    ->whereNull('date_recuperation')
+                    ->count();
+                $capacite = $salle->capacite ?? '∞';
+                $restant = $salle->capacite
+                    ? $salle->capacite - $nbAffectes
+                    : '∞';
+                $label = $restant === 0
+                    ? "🔴 {$salle->nom_salle} — PLEINE ({$nbAffectes}/{$capacite})"
+                    : "🟢 {$salle->nom_salle} — {$nbAffectes}/{$capacite}";
+                return [$salle->id => $label];
+            })
+        : [])
+    ->searchable()
+    ->placeholder('-- Tout le bloc --'),
+                DatePicker::make('date_affectation')
+                    ->label('Date d\'affectation')
+                    ->required()
+                    ->default(now())
+                    ->displayFormat('d/m/Y')
+                    ->maxDate(now())
+                    ->minDate(fn() => auth()->user()?->hasRole('admin') 
+                     ? null 
+                    : now()->toDateString()
+                     ),
 
-            Select::make('salle_id')
-                ->label('Salle (optionnelle)')
-                ->options(fn ($get) =>
-                    $get('bloc_id')
-                        ? Salle::where('bloc_id', $get('bloc_id'))
-                            ->where('actif', true)
-                            ->orderBy('nom_salle')
-                            ->pluck('nom_salle', 'id')
-                            ->toArray()
-                        : []
-                )
-                ->placeholder('-- Tout le bloc --'),
-
-            // ── Date ───────────────────────────────────────────────
-            DatePicker::make('date_affectation')
-                ->label("Date d'affectation")
-                ->default(now())
-                ->maxDate(now())
-                ->minDate(fn () =>
-                    auth()->user()?->hasRole('admin') ? null : now()
-                )
-                ->required(),
-
-            Textarea::make('observations')
-                ->label('Observations')
-                ->rows(3),
-        ]);
+                Textarea::make('observations')
+                    ->label('Observations')
+                    ->maxLength(500)
+                    ->columnSpanFull(),
+            ]);
     }
 }
