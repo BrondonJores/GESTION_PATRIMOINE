@@ -1,4 +1,5 @@
 <?php
+// app/Providers/Filament/AdminPanelProvider.php
 
 namespace App\Providers\Filament;
 
@@ -11,11 +12,9 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Icons\Heroicon;
-use Filament\View\PanelsRenderHook;
 use Filament\Widgets\AccountWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -23,6 +22,7 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Illuminate\Support\Facades\Blade;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -33,10 +33,14 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+
+            // ── Sidebar : logo patrimoine existant ─────────────────
+            // Garde exactement ce que tu avais avant
             ->brandName('Gestion du patrimoine')
-            ->brandLogo(asset('images/logo-patrimoine.svg'))
+            ->brandLogo(asset('images/favicon-patrimoine.svg'))
             ->brandLogoHeight('2.25rem')
             ->favicon(asset('images/favicon-patrimoine.svg'))
+
             ->sidebarCollapsibleOnDesktop()
             ->colors(fn (AppThemeService $theme): array => $theme->getFilamentColors())
             ->darkMode(
@@ -59,18 +63,42 @@ class AdminPanelProvider extends PanelProvider
                 'logout' => fn (Action $action): Action => $action
                     ->label('Se déconnecter'),
             ])
+
+            // ── Hook 1 : Logo IFTTS sur la page login uniquement ───
             ->renderHook(
-                PanelsRenderHook::GLOBAL_SEARCH_BEFORE,
-                fn () => view('filament.topbar-alertes'),
+                'panels::auth.login.form.before',
+                fn () => Blade::render('
+                    <div style="
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        margin-bottom: 24px;
+                    ">
+                        <img
+                            src="' . asset('images/logo-iftts.png') . '"
+                            alt="IFTTS Salé"
+                            style="height: 110px; width: auto; object-fit: contain;"
+                        />
+                    </div>
+                ')
             )
+
+            // ── Hook 2 : Masquer le heading "Connectez-vous" ───────
             ->renderHook(
-                PanelsRenderHook::GLOBAL_SEARCH_BEFORE,
-                fn () => view('filament.topbar-notifications'),
+                'panels::head.end',
+                fn () => Blade::render('
+                    <style>
+                        .fi-simple-layout .fi-simple-header {
+                            display: none !important;
+                        }
+                    </style>
+                ')
             )
+
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
-                Dashboard::class,
+                \App\Filament\Pages\Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([

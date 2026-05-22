@@ -182,6 +182,8 @@ class CategoriesTable
                 SelectFilter::make('famille_id')
                     ->label('Famille')
                     ->relationship('famille', 'nom_famille'),
+
+            
             ])
 
             ->recordActions([

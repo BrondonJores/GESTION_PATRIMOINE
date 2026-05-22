@@ -33,9 +33,7 @@ class ArticleService
 
         $article->update([
             'statut'       => Article::MAINTENANCE,
-            'observations' => trim(
-                ($article->observations ?? '') . "\n[MAINTENANCE] {$motif}"
-            ),
+            'observations' => "[MAINTENANCE — " . now()->format('d/m/Y') . "] " . $motif,
         ]);
     }
 
@@ -46,7 +44,9 @@ class ArticleService
             throw new Exception("Cet article n'est pas en maintenance.");
         }
 
-        $article->update(['statut' => Article::DISPONIBLE]);
+        $article->update(['statut' => Article::DISPONIBLE,
+         'observations' => "[RETOUR MAINTENANCE — " . now()->format('d/m/Y') . "]",
+        ]);
     }
 
     // Disponible ou En_maintenance → Réformé (irréversible)
@@ -64,9 +64,8 @@ class ArticleService
 
         $article->update([
             'statut'       => Article::REFORME,
-            'observations' => trim(
-                ($article->observations ?? '') . "\n[RÉFORME] {$motif}"
-            ),
+              'observations' => "[RÉFORME — " . now()->format('d/m/Y') . "] " . $motif,
+    
         ]);
     }
 
@@ -93,10 +92,7 @@ class ArticleService
 
         $article->update([
             'statut'       => Article::DISPONIBLE,
-            'observations' => trim(
-                ($article->observations ?? '') .
-                "\n[RÉINTÉGRATION] {$motif}"
-            ),
+          'observations' => "[RÉINTÉGRATION — " . now()->format('d/m/Y') . "] " . $motif,
         ]);
     }
     // Statistiques — calcul direct sur article.statut

@@ -13,11 +13,16 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use UnitEnum;
+use BackedEnum;
 
 class BlocResource extends Resource
 {
     protected static ?string $model = Bloc::class;
+        protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-building-office-2';
+
     protected static ?string $navigationLabel = 'Blocs';
+    protected static ?int $navigationSort = 6;
 
     public static function form(Schema $schema): Schema
     {
