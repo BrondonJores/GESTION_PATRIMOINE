@@ -1,28 +1,45 @@
 <?php
+// app/Observers/ArticleObserver.php
 
 namespace App\Observers;
 
 use App\Models\Article;
-use App\Services\StockAlertService;
+use App\Models\AuditLog as LogModel;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Request;
 
 class ArticleObserver
 {
-    public function __construct(
-        private readonly StockAlertService $stockAlertService,
-    ) {
-    }
-
     public function created(Article $article): void
     {
-        $this->stockAlertService->synchroniserPourArticle($article);
+        LogModel::create([
+            'module'      => 'Articles',
+            'action'      => 'Création',
+            'adresse_ip'  => Request::ip(),
+            'user_id'     => Auth::id(),
+            'date_action' => now(),
+        ]);
     }
 
     public function updated(Article $article): void
     {
-        if (! $article->wasChanged(['quantite', 'quantite_min'])) {
-            return;
-        }
+        LogModel::create([
+            'module'      => 'Articles',
+            'action'      => 'Modification',
+            'adresse_ip'  => Request::ip(),
+            'user_id'     => Auth::id(),
+            'date_action' => now(),
+        ]);
+    }
 
-        $this->stockAlertService->synchroniserPourArticle($article);
+    public function deleting(Article $article): void
+    {
+        LogModel::create([
+            'module'      => 'Articles',
+            'action'      => 'Suppression',
+            'adresse_ip'  => Request::ip(),
+            'user_id'     => Auth::id(),
+            'date_action' => now(),
+        ]);
     }
 }

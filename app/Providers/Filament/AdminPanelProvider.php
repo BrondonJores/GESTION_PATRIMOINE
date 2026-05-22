@@ -4,6 +4,11 @@ namespace App\Providers\Filament;
 
 use App\Filament\Pages\Apparence;
 use App\Filament\Pages\Profile;
+use App\Filament\Widgets\ArticlesStatutChartWidget;
+use App\Filament\Widgets\EvolutionAffectationsWidget;
+use App\Filament\Widgets\RepartitionBlocChartWidget;
+use App\Filament\Widgets\RepartitionCategorieChartWidget;
+use App\Filament\Widgets\StatsOverviewWidget;
 use App\Services\AppThemeService;
 use Filament\Actions\Action;
 use Filament\Enums\UserMenuPosition;
@@ -75,6 +80,11 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
                 AccountWidget::class,
+                StatsOverviewWidget::class,
+                ArticlesStatutChartWidget::class,
+                RepartitionCategorieChartWidget::class,
+                RepartitionBlocChartWidget::class,
+                EvolutionAffectationsWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,
