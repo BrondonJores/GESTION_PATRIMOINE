@@ -1,10 +1,9 @@
 <?php
 
 namespace Database\Seeders;
+
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
-
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class RolePermissionSeeder extends Seeder
@@ -15,26 +14,26 @@ public function run()
 {
     $permissions = [
 
-        // Articles
+        // ARTICLES
         'view articles',
         'view_any articles',
         'create articles',
         'update articles',
         'delete articles',
 
-        // Blocs
+        // BLOCS
         'view blocs',
         'create blocs',
         'update blocs',
         'delete blocs',
 
-        // Salles
+        // SALLES
         'view salles',
         'create salles',
         'update salles',
         'delete salles',
 
-        // Affectations
+        // AFFECTATIONS
         'view affectations',
         'create affectations',
         'update affectations',
@@ -42,27 +41,26 @@ public function run()
         'reaffecter articles',
         'recuperer articles',
 
-        // Alertes
+        // ALERTES
         'view alertes',
         'traiter alertes',
         'delete alertes',
 
-        // Notifications
+        // NOTIFICATIONS
         'view notifications',
         'delete notifications',
 
-        // Rapports
+        // RAPPORTS
         'view rapports',
         'create rapports',
-        'delete rapports',
         'export rapports',
 
-        // Journaux
+        // LOGS
         'view logs',
         'delete logs',
         'export logs',
 
-        // Utilisateurs
+        // USERS
         'view users',
         'create users',
         'update users',
@@ -73,30 +71,30 @@ public function run()
         'deactivate users',
     ];
 
-    foreach ($permissions as $permission) {
-        Permission::firstOrCreate(['name' => $permission]);
-    }
+        foreach ($permissions as $permission) {
+            Permission::firstOrCreate(['name' => $permission]);
+        }
 
-    // Rôles
+    // ROLES
     $admin = Role::firstOrCreate(['name' => 'admin']);
     $gestionnaire = Role::firstOrCreate(['name' => 'gestionnaire']);
     $user = Role::firstOrCreate(['name' => 'utilisateur']);
 
-    // Administrateur : accès complet
+    // ADMIN → tout
     $admin->syncPermissions(Permission::all());
 
-    // Gestionnaire
+    // GESTIONNAIRE
     $gestionnaire->syncPermissions([
         'view articles', 'create articles', 'update articles',
         'view affectations', 'create affectations', 'update affectations',
         'reaffecter articles', 'recuperer articles',
-        'view rapports', 'create rapports', 'export rapports',
-        'view alertes', 'traiter alertes',
+        'view rapports', 'create rapports',
+        'view alertes', 'update alertes',
         'view notifications',
         'view blocs', 'view salles'
     ]);
 
-    // Utilisateur : lecture seule
+    // UTILISATEUR (lecture seule)
     $user->syncPermissions([
         'view articles',
         'view affectations',
@@ -104,3 +102,4 @@ public function run()
     ]);
 }
     }
+

@@ -26,6 +26,16 @@ class UserPolicy
         return $user->can('update users');
     }
 
+    public function assignRoles(User $user, User $model): bool
+    {
+        return $user->can('assign roles');
+    }
+
+    public function resetPassword(User $user, User $model): bool
+    {
+        return $user->can('reset password users');
+    }
+
     public function delete(User $user, User $model): bool
     {
         return $user->can('delete users') && $user->isNot($model);

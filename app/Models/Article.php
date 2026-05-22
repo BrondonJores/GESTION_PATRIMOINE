@@ -10,13 +10,16 @@ class Article extends Model
         'numero_reference',
         'code_ancien',
         'designation',
-        'quantite',
-        'statut',
-        'quantite_min',
-        'etat',
+        'statut', 
         'observations',
         'categorie_id',
     ];
+
+        // Constantes statut — évite les strings magiques partout dans le code
+    const DISPONIBLE    = 'Disponible';
+    const AFFECTE       = 'Affecté';
+    const MAINTENANCE   = 'En_maintenance';
+    const REFORME       = 'Réformé';
 
     public function categorie()
     {
@@ -28,8 +31,34 @@ class Article extends Model
         return $this->hasMany(Affectation::class);
     }
 
-    public function alertes()
+    
+
+    
+    // ── Helpers ────────────────────────────────────────────────────
+
+    public function estDisponible(): bool
     {
-        return $this->hasMany(Alerte::class);
+        return $this->statut === self::DISPONIBLE;
+    }
+
+    public function estAffecte(): bool
+    {
+        return $this->statut === self::AFFECTE;
+    }
+
+    public function estEnMaintenance(): bool
+    {
+        return $this->statut === self::MAINTENANCE;
+    }
+
+    public function estReforme(): bool
+    {
+        return $this->statut === self::REFORME;
+    }
+
+    // Un article réformé est définitivement hors service
+    public function estArchive(): bool
+    {
+        return $this->statut === self::REFORME;
     }
 }

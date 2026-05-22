@@ -16,10 +16,12 @@ return new class extends Migration
         $table->string('numero_reference', 100)->unique();
         $table->string('code_ancien', 100)->nullable();
         $table->string('designation', 255);
-        $table->integer('quantite')->default(0);
-        $table->enum('statut', ['Disponible', 'Affecté', 'En_maintenance', 'Réformé'])->default('Disponible');
-        $table->integer('quantite_min')->nullable();
-        $table->enum('etat', ['Neuf', 'Bon', 'Usagé', 'En_panne', 'Réformé'])->default('Bon');
+         $table->enum('statut', [
+            'Disponible',
+            'Affecté',
+            'En_maintenance',
+            'Réformé',
+        ])->default('Disponible');
         $table->text('observations')->nullable();
         $table->foreignId('categorie_id')->constrained('categories')->onDelete('cascade');
         $table->timestamps();
