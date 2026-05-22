@@ -35,7 +35,7 @@ class AdminPanelProvider extends PanelProvider
             ->login()
 
             // ── Sidebar : logo patrimoine existant ─────────────────
-            // Garde exactement ce que tu avais avant
+
             ->brandName('Gestion du patrimoine')
             ->brandLogo(asset('images/favicon-patrimoine.svg'))
             ->brandLogoHeight('2.25rem')
@@ -64,7 +64,7 @@ class AdminPanelProvider extends PanelProvider
                     ->label('Se déconnecter'),
             ])
 
-            // ── Hook 1 : Logo IFTTS sur la page login uniquement ───
+            //  Logo IFTTS sur la page login uniquement 
             ->renderHook(
                 'panels::auth.login.form.before',
                 fn () => Blade::render('
@@ -83,7 +83,7 @@ class AdminPanelProvider extends PanelProvider
                 ')
             )
 
-            // ── Hook 2 : Masquer le heading "Connectez-vous" ───────
+            // ── Hook 2 : Masquer le heading
             ->renderHook(
                 'panels::head.end',
                 fn () => Blade::render('

@@ -10,8 +10,10 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Filament\Actions\Action;
-
+use Illuminate\Support\Facades\Auth;
 use Filament\Actions\EditAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\CreateAction;
 
 class ListCategoriesConsommables extends ListRecords
 {
@@ -31,6 +33,8 @@ class ListCategoriesConsommables extends ListRecords
                 ->icon('heroicon-m-list-bullet')
                 ->color('gray')
                 ->url(CategorieResource::getUrl('index')),
+            CreateAction::make()
+            ->visible(fn () => Auth::user()?->can('create categories') ?? false),
             // Lien retour vers équipements
             \Filament\Actions\Action::make('voir_equipements')
                 ->label('Voir les équipements')
@@ -38,8 +42,9 @@ class ListCategoriesConsommables extends ListRecords
                 ->color('primary')
                 ->url(CategorieResource::getUrl('index')),
 
-            \Filament\Actions\CreateAction::make(),
-        ];
+        
+    ];
+        
     }
 
     public function table(Table $table): Table
@@ -108,8 +113,17 @@ class ListCategoriesConsommables extends ListRecords
                     ->label('Famille')
                     ->relationship('famille', 'nom_famille'),
             ])
-            ->recordActions([
-                EditAction::make(),
+          ->recordActions([
+    EditAction::make()
+        ->visible(fn () =>
+            Auth::user()?->can('update categories') ?? false
+        ),
+
+    DeleteAction::make()
+        ->requiresConfirmation()
+        ->visible(fn () =>
+            Auth::user()?->can('delete categories') ?? false
+        ->requiresConfirmation(),),
             ])
             ->actionsColumnLabel('Actions')
             ->defaultSort('nom_categorie');

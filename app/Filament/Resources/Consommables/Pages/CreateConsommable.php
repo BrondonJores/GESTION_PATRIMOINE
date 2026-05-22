@@ -5,9 +5,12 @@ namespace App\Filament\Resources\Consommables\Pages;
 use App\Filament\Resources\Consommables\ConsommableResource;
 use Filament\Resources\Pages\CreateRecord;
 use Filament\Notifications\Notification;
+
+
 class CreateConsommable extends CreateRecord
 {
     protected static string $resource = ConsommableResource::class;
+
 
      protected function mutateFormDataBeforeCreate(array $data): array
     {

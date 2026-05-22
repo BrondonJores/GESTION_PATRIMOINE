@@ -13,7 +13,8 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\FileUpload;
 use Filament\Notifications\Notification;
-use Illuminate\Support\Facades\Storage;
+
+
 
 class ConsommablesTable
 {
@@ -70,12 +71,18 @@ class ConsommablesTable
             ])
 
             ->recordActions([
-                EditAction::make(),
+            EditAction::make()
+        ->visible(fn () =>
+            Auth::user()?->can('update articles') ?? false
+        ),
 
                 Action::make('reapprovisionner')
                     ->label('Réapprovisionner')
                     ->icon('heroicon-o-plus-circle')
                     ->color('success')
+                     ->visible(fn () =>
+            Auth::user()?->hasAnyRole(['admin', 'gestionnaire']) ?? false
+        )
                     ->form([
                         \Filament\Forms\Components\TextInput::make('quantite')
                             ->numeric()
