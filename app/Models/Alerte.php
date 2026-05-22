@@ -15,7 +15,7 @@ class Alerte extends Model
         'note_resolution',
         'date_alerte',
         'date_traitement',
-        'article_id',
+        'consommable_id',
     ];
 
     protected function casts(): array
@@ -26,8 +26,8 @@ class Alerte extends Model
         ];
     }
 
-    public function article(): BelongsTo
+    public function consommable(): BelongsTo
     {
-        return $this->belongsTo(Article::class);
+        return $this->belongsTo(Consommable::class);
     }
 }

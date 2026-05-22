@@ -41,13 +41,6 @@ class CreateConsommable extends CreateRecord
             $this->notifierErreur("Le seuil minimal ne peut pas être négatif.");
         }
 
-        // Règle 3 : quantité ne peut pas être inférieure au seuil
-        if (!is_null($quantiteMin) && $quantite < $quantiteMin) {
-            $this->notifierErreur(
-                "La quantité en stock ({$quantite}) ne peut pas être " .
-                "inférieure au seuil minimal ({$quantiteMin})."
-            );
-        }
     }
 
     private function notifierErreur(string $message): never

@@ -14,9 +14,9 @@ class AlerteForm
     {
         return $schema
             ->components([
-                Select::make('article_id')
-                    ->label('Article')
-                    ->relationship('article', 'designation')
+                Select::make('consommable_id')
+                    ->label('Consommable')
+                    ->relationship('consommable', 'designation')
                     ->required()
                     ->searchable()
                     ->preload(),

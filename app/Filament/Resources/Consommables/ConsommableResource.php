@@ -44,22 +44,22 @@ class ConsommableResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return Auth::user()?->can('view articles') ?? false;
+        return Auth::user()?->can('view consommables') ?? false;
     }
 
     public static function canCreate(): bool
     {
-        return Auth::user()?->can('create articles') ?? false;
+        return Auth::user()?->can('create consommables') ?? false;
     }
 
     public static function canEdit(Model $record): bool
     {
-        return Auth::user()?->can('update articles') ?? false;
+        return Auth::user()?->can('update consommables') ?? false;
     }
 
     public static function canDelete(Model $record): bool
     {
-        return Auth::user()?->can('delete articles') ?? false;
+        return Auth::user()?->can('delete consommables') ?? false;
     }
 
     public static function getPages(): array

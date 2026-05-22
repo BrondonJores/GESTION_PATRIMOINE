@@ -3,8 +3,12 @@
 namespace App\Filament\Pages;
 
 use App\Services\AppThemeService;
+use App\Services\Reports\ReportTheme;
 use BackedEnum;
 use Filament\Forms\Components\ColorPicker;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\ToggleButtons;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -32,9 +36,12 @@ class Apparence extends Page
      */
     public array $data = [];
 
-    public function mount(AppThemeService $theme): void
+    public function mount(AppThemeService $theme, ReportTheme $reportTheme): void
     {
-        $this->form->fill($theme->getTheme());
+        $this->form->fill([
+            ...$theme->getTheme(),
+            ...$reportTheme->identity(),
+        ]);
     }
 
     public function form(Schema $schema): Schema
@@ -163,17 +170,74 @@ class Apparence extends Page
                     ->columns([
                         'md' => 2,
                     ]),
+                Section::make('Identité des rapports')
+                    ->description('Ces valeurs alimentent l’en-tête et le pied de page des PDF générés.')
+                    ->icon(Heroicon::OutlinedDocumentText)
+                    ->schema([
+                        TextInput::make('brand_name')
+                            ->label('Nom affiché')
+                            ->required()
+                            ->maxLength(120),
+                        FileUpload::make('header_image_path')
+                            ->label('Image d’en-tête')
+                            ->disk('public')
+                            ->directory('report-branding')
+                            ->image()
+                            ->acceptedFileTypes(['image/jpeg'])
+                            ->helperText('Image JPEG utilisée comme en-tête fixe du rapport.')
+                            ->columnSpanFull(),
+                        FileUpload::make('footer_image_path')
+                            ->label('Image de pied de page')
+                            ->disk('public')
+                            ->directory('report-branding')
+                            ->image()
+                            ->acceptedFileTypes(['image/jpeg'])
+                            ->helperText('Image JPEG utilisée comme pied de page fixe du rapport.')
+                            ->columnSpanFull(),
+                        TextInput::make('entity_name')
+                            ->label('Entité')
+                            ->required()
+                            ->maxLength(120),
+                        TextInput::make('service_name')
+                            ->label('Service')
+                            ->required()
+                            ->maxLength(120),
+                        TextInput::make('classification_label')
+                            ->label('Classification')
+                            ->required()
+                            ->maxLength(120),
+                        TextInput::make('document_nature')
+                            ->label('Nature du document')
+                            ->required()
+                            ->maxLength(120),
+                        TextInput::make('table_title')
+                            ->label('Titre du tableau')
+                            ->required()
+                            ->maxLength(120),
+                        Textarea::make('footer_label')
+                            ->label('Pied de page')
+                            ->required()
+                            ->rows(2)
+                            ->maxLength(180)
+                            ->columnSpanFull(),
+                    ])
+                    ->columns([
+                        'md' => 2,
+                    ]),
             ])
             ->statePath('data');
     }
 
-    public function save(AppThemeService $theme): void
+    public function save(AppThemeService $theme, ReportTheme $reportTheme): void
     {
-        $theme->saveTheme($this->form->getState());
+        $state = $this->form->getState();
+
+        $theme->saveTheme($state);
+        $reportTheme->saveIdentity($state);
 
         Notification::make()
-            ->title('Apparence enregistrée')
-            ->body('Rechargez la page pour appliquer les nouvelles couleurs au panel.')
+            ->title('Paramètres enregistrés')
+            ->body('Les couleurs du panel et l’identité des rapports ont été mises à jour.')
             ->success()
             ->send();
     }

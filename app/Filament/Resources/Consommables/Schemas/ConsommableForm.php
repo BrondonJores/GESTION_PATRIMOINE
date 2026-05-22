@@ -12,6 +12,10 @@ class ConsommableForm
     public static function configure(Schema $schema): Schema
     {
         return $schema->components([
+            TextInput::make('reference')
+                ->label('Référence')
+                ->maxLength(100)
+                ->unique(ignoreRecord: true),
        
             TextInput::make('designation')
                 ->label('Désignation')

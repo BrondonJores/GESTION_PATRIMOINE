@@ -58,7 +58,7 @@ class ConsommableObserver
 
         Alerte::create([
             'consommable_id' => $consommable->id,
-            'article_id'     => null,
+            'type_alerte'    => $stock <= 0 ? 'stock_epuise' : ($stock <= $seuilMin ? 'stock_minimal_atteint' : 'seuil_proche'),
             'statut'         => 'Non_traité',
             'canal'          => $canal,
             'retour'         => $retour,

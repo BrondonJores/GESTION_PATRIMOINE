@@ -21,6 +21,24 @@ public function run()
         'update articles',
         'delete articles',
 
+        // CONSOMMABLES
+        'view consommables',
+        'create consommables',
+        'update consommables',
+        'delete consommables',
+
+        // FAMILLES
+        'view familles',
+        'create familles',
+        'update familles',
+        'delete familles',
+
+        // CATEGORIES
+        'view categories',
+        'create categories',
+        'update categories',
+        'delete categories',
+
         // BLOCS
         'view blocs',
         'create blocs',
@@ -86,20 +104,24 @@ public function run()
     // GESTIONNAIRE
     $gestionnaire->syncPermissions([
         'view articles', 'create articles', 'update articles',
+        'view consommables', 'create consommables', 'update consommables',
+        'view familles', 'create familles', 'update familles',
+        'view categories', 'create categories', 'update categories',
         'view affectations', 'create affectations', 'update affectations',
         'reaffecter articles', 'recuperer articles',
-        'view rapports', 'create rapports',
-        'view alertes', 'update alertes',
+        'view rapports', 'create rapports', 'export rapports',
+        'view alertes', 'traiter alertes',
         'view notifications',
-        'view blocs', 'view salles'
+        'view blocs', 'create blocs', 'update blocs',
+        'view salles', 'create salles', 'update salles'
     ]);
 
     // UTILISATEUR (lecture seule)
     $user->syncPermissions([
         'view articles',
+        'view consommables',
         'view affectations',
         'view rapports'
     ]);
 }
     }
-

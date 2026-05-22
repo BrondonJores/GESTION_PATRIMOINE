@@ -8,8 +8,8 @@ use App\Filament\Resources\Notifications\NotificationResource;
 use App\Filament\Resources\Rapports\RapportResource;
 use App\Models\Affectation;
 use App\Models\Alerte;
-use App\Models\Article;
 use App\Models\AuditLog;
+use App\Models\Consommable;
 use App\Models\Notification;
 use App\Models\Rapport;
 use Carbon\CarbonImmutable;
@@ -22,7 +22,7 @@ class SupportAdminOverview extends StatsOverviewWidget
 {
     protected ?string $heading = 'Supervision';
 
-    protected ?string $description = 'Pilotage rapide du patrimoine, du stock et des actions récentes.';
+    protected ?string $description = 'Pilotage rapide du patrimoine, des consommables et des actions récentes.';
 
     protected int|array|null $columns = [
         'default' => 1,
@@ -42,12 +42,14 @@ class SupportAdminOverview extends StatsOverviewWidget
             ->count();
         $unreadNotifications = Notification::query()->where('lu', false)->count();
         $notificationsToday = Notification::query()->whereDate('date_envoi', today())->count();
-        $totalStock = Article::query()->sum('quantite');
-        $lowStockArticles = Article::query()
-            ->whereNotNull('quantite_min')
-            ->whereColumn('quantite', '<=', 'quantite_min')
+        $stockConsommables = Consommable::query()->sum('quantite_stock');
+        $consommablesSousSeuil = Consommable::query()
+            ->whereIn('statut', ['Sous seuil', 'Épuisé'])
             ->count();
-        $activeAffectations = Affectation::query()->whereNull('date_recuperation')->count();
+        $activeAffectations = Affectation::query()
+            ->where('type', 'article')
+            ->whereNull('date_recuperation')
+            ->count();
         $reportsThisMonth = Rapport::query()
             ->whereBetween('date_generation', [now()->startOfMonth(), now()->endOfMonth()])
             ->count();
@@ -67,17 +69,17 @@ class SupportAdminOverview extends StatsOverviewWidget
                 ->icon(Heroicon::OutlinedBell)
                 ->chart($this->dailyCounts(Notification::query(), 'date_envoi'))
                 ->url(NotificationResource::getUrl('index')),
-            Stat::make('Stock total', number_format((int) $totalStock, 0, ',', ' '))
-                ->description($lowStockArticles.' article(s) sous seuil')
+            Stat::make('Stock consommables', number_format((int) $stockConsommables, 0, ',', ' '))
+                ->description($consommablesSousSeuil.' référence(s) à surveiller')
                 ->descriptionIcon(Heroicon::OutlinedExclamationCircle)
-                ->descriptionColor($lowStockArticles > 0 ? 'danger' : 'success')
-                ->color($lowStockArticles > 0 ? 'warning' : 'success')
+                ->descriptionColor($consommablesSousSeuil > 0 ? 'danger' : 'success')
+                ->color($consommablesSousSeuil > 0 ? 'warning' : 'success')
                 ->icon(Heroicon::OutlinedCube),
             Stat::make('Affectations actives', $activeAffectations)
-                ->description('Matériel actuellement affecté')
+                ->description('Équipements actuellement affectés')
                 ->color('info')
                 ->icon(Heroicon::OutlinedArrowPathRoundedSquare)
-                ->chart($this->dailyCounts(Affectation::query(), 'created_at')),
+                ->chart($this->dailyCounts(Affectation::query()->where('type', 'article'), 'created_at')),
             Stat::make('Rapports ce mois', $reportsThisMonth)
                 ->description(Rapport::query()->count().' rapport(s) au total')
                 ->color('primary')

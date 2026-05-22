@@ -48,12 +48,6 @@ class EditConsommable extends EditRecord
             $this->notifierErreur("Le seuil minimal ne peut pas être négatif.");
         }
 
-        if (!is_null($quantiteMin) && $quantite < $quantiteMin) {
-            $this->notifierErreur(
-                "La quantité en stock ({$quantite}) ne peut pas être " .
-                "inférieure au seuil minimal ({$quantiteMin})."
-            );
-        }
     }
 
     private function notifierErreur(string $message): never

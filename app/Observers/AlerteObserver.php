@@ -22,7 +22,7 @@ class AlerteObserver
 
         $this->notifications->notifyUsers(
             $this->notifications->supportRecipients(),
-            StockAlertType::label($alerte->type_alerte) . " pour l'article #{$alerte->article_id}.",
+            StockAlertType::label($alerte->type_alerte) . " pour le consommable " . ($alerte->consommable?->designation ?? "#{$alerte->consommable_id}") . '.',
             $alerte->canal,
         );
     }

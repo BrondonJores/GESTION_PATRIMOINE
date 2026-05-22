@@ -2,7 +2,6 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\Bloc;
 use App\Models\Affectation;
 use Filament\Widgets\ChartWidget;
 
@@ -24,8 +23,12 @@ class RepartitionBlocChartWidget extends ChartWidget
 
     protected function getData(): array
     {
-        $query = Bloc::query()
-            ->join('affectations', 'blocs.id', '=', 'affectations.bloc_id')
+        $query = Affectation::query()
+            ->leftJoin('salles', 'salles.id', '=', 'affectations.salle_id')
+            ->join('blocs', function ($join): void {
+                $join->on('blocs.id', '=', 'affectations.bloc_id')
+                    ->orOn('blocs.id', '=', 'salles.bloc_id');
+            })
             ->whereNull('affectations.date_recuperation');
 
         // Filtrer par type

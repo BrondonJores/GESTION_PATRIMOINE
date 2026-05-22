@@ -8,6 +8,17 @@ use App\Models\Consommable;
 
 class ConsommableObserver
 {
+    public function created(Consommable $consommable): void
+    {
+        $nouveauStatut = $consommable->calculerStatut();
+
+        if ($consommable->statut !== $nouveauStatut) {
+            $consommable->updateQuietly(['statut' => $nouveauStatut]);
+        }
+
+        $this->verifierAlerte($consommable);
+    }
+
     public function updated(Consommable $consommable): void
     {
         // Recalculer le statut après chaque modification
@@ -57,13 +68,23 @@ class ConsommableObserver
                         ->exists();
         if ($existe) return;
 
-       Alerte::create([
-    'consommable_id' => $consommable->id,
-    'statut'         => 'Non_traité',
-    'canal'          => $canal,
-    'retour'         => $retour,
-    'date_alerte'    => now(),
-     ]);
+        Alerte::create([
+            'consommable_id' => $consommable->id,
+            'type_alerte' => $this->typeAlerte($stock, $seuilMin),
+            'statut' => 'Non_traité',
+            'canal' => $canal,
+            'retour' => $retour,
+            'date_alerte' => now(),
+        ]);
 
+    }
+
+    private function typeAlerte(int $stock, int $seuilMin): string
+    {
+        if ($stock <= 0) {
+            return 'stock_epuise';
+        }
+
+        return $stock <= $seuilMin ? 'stock_minimal_atteint' : 'seuil_proche';
     }
 }
