@@ -5,10 +5,12 @@ namespace App\Filament\Resources\Articles\Tables;
 
 use App\Models\Article;
 use App\Models\Famille;
+use App\Services\ArticleImportService;
 use App\Services\ArticleService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
@@ -17,6 +19,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 
 class ArticlesTable
@@ -207,6 +210,44 @@ class ArticlesTable
             ])
             ->actionsColumnLabel('Actions')
             ->toolbarActions([
+                Action::make('telecharger_canevas')
+                    ->label('Canevas CSV')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->action(fn () => response()->streamDownload(
+                        fn () => print app(ArticleImportService::class)->csvTemplate(),
+                        'canevas-articles.csv',
+                        ['Content-Type' => 'text/csv; charset=UTF-8'],
+                    )),
+                Action::make('importer')
+                    ->label('Importer')
+                    ->icon('heroicon-o-arrow-up-tray')
+                    ->color('primary')
+                    ->visible(fn () => Auth::user()?->can('create articles') ?? false)
+                    ->form([
+                        FileUpload::make('fichier')
+                            ->label('Fichier CSV')
+                            ->disk('local')
+                            ->directory('imports/articles')
+                            ->acceptedFileTypes(['text/csv', 'text/plain', 'application/vnd.ms-excel'])
+                            ->required(),
+                    ])
+                    ->action(function (array $data): void {
+                        $path = is_array($data['fichier']) ? reset($data['fichier']) : $data['fichier'];
+                        $result = app(ArticleImportService::class)->importCsv(Storage::disk('local')->path($path));
+                        Storage::disk('local')->delete($path);
+
+                        $body = "{$result['created']} créé(s), {$result['updated']} mis à jour, {$result['skipped']} ignoré(s).";
+
+                        if ($result['errors'] !== []) {
+                            $body .= "\n" . implode("\n", array_slice($result['errors'], 0, 5));
+                        }
+
+                        Notification::make()
+                            ->title('Import terminé')
+                            ->body($body)
+                            ->success()
+                            ->send();
+                    }),
                 BulkActionGroup::make([]),
             ])
             ->defaultSort('created_at', 'desc');

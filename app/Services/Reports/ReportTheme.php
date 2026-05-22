@@ -141,12 +141,12 @@ class ReportTheme
 
         return [
             'brand_name' => $this->normalizeText($identity['brand_name'] ?? null, self::DEFAULT_IDENTITY['brand_name']),
-            'entity_name' => $this->normalizeText($identity['entity_name'] ?? null, self::DEFAULT_IDENTITY['entity_name']),
-            'service_name' => $this->normalizeText($identity['service_name'] ?? null, self::DEFAULT_IDENTITY['service_name']),
-            'classification_label' => $this->normalizeText($identity['classification_label'] ?? null, self::DEFAULT_IDENTITY['classification_label']),
-            'document_nature' => $this->normalizeText($identity['document_nature'] ?? null, self::DEFAULT_IDENTITY['document_nature']),
-            'table_title' => $this->normalizeText($identity['table_title'] ?? null, self::DEFAULT_IDENTITY['table_title']),
-            'footer_label' => $this->normalizeText($identity['footer_label'] ?? null, self::DEFAULT_IDENTITY['footer_label']),
+            'entity_name' => $this->normalizeOptionalText($identity['entity_name'] ?? null),
+            'service_name' => $this->normalizeOptionalText($identity['service_name'] ?? null),
+            'classification_label' => $this->normalizeOptionalText($identity['classification_label'] ?? null),
+            'document_nature' => $this->normalizeOptionalText($identity['document_nature'] ?? null),
+            'table_title' => $this->normalizeOptionalText($identity['table_title'] ?? null),
+            'footer_label' => $this->normalizeOptionalText($identity['footer_label'] ?? null),
             'header_image_path' => $this->normalizeImagePath($identity['header_image_path'] ?? ($identity['logo_path'] ?? null)),
             'footer_image_path' => $this->normalizeImagePath($identity['footer_image_path'] ?? null),
         ];
@@ -161,12 +161,12 @@ class ReportTheme
             ['key' => self::SETTING_KEY],
             ['value' => [
                 'brand_name' => $this->normalizeText($identity['brand_name'] ?? null, self::DEFAULT_IDENTITY['brand_name']),
-                'entity_name' => $this->normalizeText($identity['entity_name'] ?? null, self::DEFAULT_IDENTITY['entity_name']),
-                'service_name' => $this->normalizeText($identity['service_name'] ?? null, self::DEFAULT_IDENTITY['service_name']),
-                'classification_label' => $this->normalizeText($identity['classification_label'] ?? null, self::DEFAULT_IDENTITY['classification_label']),
-                'document_nature' => $this->normalizeText($identity['document_nature'] ?? null, self::DEFAULT_IDENTITY['document_nature']),
-                'table_title' => $this->normalizeText($identity['table_title'] ?? null, self::DEFAULT_IDENTITY['table_title']),
-                'footer_label' => $this->normalizeText($identity['footer_label'] ?? null, self::DEFAULT_IDENTITY['footer_label']),
+                'entity_name' => $this->normalizeOptionalText($identity['entity_name'] ?? null),
+                'service_name' => $this->normalizeOptionalText($identity['service_name'] ?? null),
+                'classification_label' => $this->normalizeOptionalText($identity['classification_label'] ?? null),
+                'document_nature' => $this->normalizeOptionalText($identity['document_nature'] ?? null),
+                'table_title' => $this->normalizeOptionalText($identity['table_title'] ?? null),
+                'footer_label' => $this->normalizeOptionalText($identity['footer_label'] ?? null),
                 'header_image_path' => $this->normalizeImagePath($identity['header_image_path'] ?? null),
                 'footer_image_path' => $this->normalizeImagePath($identity['footer_image_path'] ?? null),
             ]],
@@ -228,6 +228,17 @@ class ReportTheme
         $value = trim(preg_replace('/\s+/', ' ', $value) ?? '');
 
         return $value === '' ? $fallback : mb_substr($value, 0, 180);
+    }
+
+    private function normalizeOptionalText(mixed $value): string
+    {
+        if (! is_string($value)) {
+            return '';
+        }
+
+        $value = trim(preg_replace('/\s+/', ' ', $value) ?? '');
+
+        return mb_substr($value, 0, 180);
     }
 
     private function normalizeImagePath(mixed $value): ?string

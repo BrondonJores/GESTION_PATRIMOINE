@@ -86,28 +86,29 @@ class ReportPdfRenderer
 
         if ($hasHeaderImage) {
             $commands[] = 'q 499 0 0 88 48 742 cm /ImHeader Do Q';
-            $headerTextX = 58;
-            $headerTextY = 812;
         } else {
             $headerTextX = 48;
             $headerTextY = 792;
+
+            $commands[] = $this->textIfNotBlank($this->theme->brandName(), $headerTextX, $headerTextY, 12, 'F2');
+            $commands[] = $this->textIfNotBlank($this->theme->entityName(), $headerTextX, $headerTextY - 14, 9, 'F2');
+            $commands[] = $this->textIfNotBlank($this->theme->serviceName(), $headerTextX, $headerTextY - 28, 8);
+            $commands[] = $this->textIfNotBlank($this->theme->classificationLabel(), 374, 792, 9, 'F2');
+            $commands[] = $this->textIfNotBlank($this->theme->documentNature(), 374, 774, 9);
         }
 
-        $commands[] = $this->text($this->theme->brandName(), $headerTextX, $headerTextY, 12, 'F2');
-        $commands[] = $this->text($this->theme->entityName(), $headerTextX, $headerTextY - 14, 9, 'F2');
-        $commands[] = $this->text($this->theme->serviceName(), $headerTextX, $headerTextY - 28, 8);
-        $commands[] = $this->text($this->theme->classificationLabel(), 374, 792, 9, 'F2');
-        $commands[] = $this->text($this->theme->documentNature(), 374, 774, 9);
-        $commands[] = $this->theme->primaryColor() . ' RG 48 750 499 1 re S';
+        if (! $hasHeaderImage) {
+            $commands[] = $this->theme->primaryColor() . ' RG 48 750 499 1 re S';
+        }
 
-        $commands[] = $this->text(strtoupper($this->theme->documentNature()), 218, 714, 13, 'F2');
+        $commands[] = $this->textIfNotBlank(strtoupper($this->theme->documentNature()), 218, 714, 13, 'F2');
         $commands[] = $this->text($this->truncate(strtoupper($title), 499, 11), 48, 682, 11, 'F2');
 
         if ($page === 1) {
             $commands = array_merge($commands, $this->renderAdministrativeNotice($title, $user, $periode, $summary));
         }
 
-        $commands[] = $this->text($this->theme->tableTitle(), 48, 408, 10, 'F2');
+        $commands[] = $this->textIfNotBlank($this->theme->tableTitle(), 48, 408, 10, 'F2');
 
         $tableTop = 386;
         $tableLeft = $this->theme->margin();
@@ -270,6 +271,11 @@ class ReportPdfRenderer
         $color = $white ? '1 1 1 rg' : '0 0 0 rg';
 
         return "{$color} BT /{$font} {$size} Tf {$x} {$y} Td (" . $this->escape($text) . ') Tj ET';
+    }
+
+    private function textIfNotBlank(string $text, float $x, float $y, int $size = 10, string $font = 'F1', bool $white = false): string
+    {
+        return trim($text) === '' ? '' : $this->text($text, $x, $y, $size, $font, $white);
     }
 
     private function truncate(string $value, float $width, int $fontSize): string

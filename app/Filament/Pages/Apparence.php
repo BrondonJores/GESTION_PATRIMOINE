@@ -196,27 +196,21 @@ class Apparence extends Page
                             ->columnSpanFull(),
                         TextInput::make('entity_name')
                             ->label('Entité')
-                            ->required()
                             ->maxLength(120),
                         TextInput::make('service_name')
                             ->label('Service')
-                            ->required()
                             ->maxLength(120),
                         TextInput::make('classification_label')
                             ->label('Classification')
-                            ->required()
                             ->maxLength(120),
                         TextInput::make('document_nature')
                             ->label('Nature du document')
-                            ->required()
                             ->maxLength(120),
                         TextInput::make('table_title')
                             ->label('Titre du tableau')
-                            ->required()
                             ->maxLength(120),
                         Textarea::make('footer_label')
                             ->label('Pied de page')
-                            ->required()
                             ->rows(2)
                             ->maxLength(180)
                             ->columnSpanFull(),
