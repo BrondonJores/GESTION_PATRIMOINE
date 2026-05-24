@@ -15,7 +15,6 @@ return new class extends Migration
         $table->id();
         $table->string('code_salle', 50)->unique();
         $table->string('nom_salle', 100);
-        $table->integer('capacite')->nullable();
         $table->boolean('actif')->default(true);
         $table->foreignId('bloc_id')->constrained('blocs')->onDelete('cascade');
         $table->timestamps();
