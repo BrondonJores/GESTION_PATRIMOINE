@@ -12,6 +12,7 @@ use Filament\Tables\Table;
 use Filament\Actions\EditAction;
 use Filament\Actions\DeleteAction;
 use App\Models\Categorie;
+use Illuminate\Support\Facades\Auth;
 
 class ListCategories extends ListRecords
 {
@@ -39,8 +40,10 @@ class ListCategories extends ListRecords
                 ->color('warning')
                 ->url(CategorieResource::getUrl('consommables')),
 
-            CreateAction::make(),
-        ];
+              CreateAction::make()
+            ->visible(fn () => Auth::user()?->can('create categories') ?? false),
+    ];
+        
     }
 
     public function table(Table $table): Table
@@ -76,9 +79,21 @@ class ListCategories extends ListRecords
                     ->relationship('famille', 'nom_famille'),
             ])
             ->recordActions([
-                EditAction::make(),
-                DeleteAction::make()
-                    ->requiresConfirmation(),
+                 EditAction::make()
+        ->visible(fn () =>
+            Auth::user()?->can('update categories') ?? false
+        ),
+
+    DeleteAction::make()
+        ->requiresConfirmation()
+        ->visible(fn () =>
+            Auth::user()?->can('delete categories') ?? false
+
+        ),
+           CreateAction::make()
+        ->visible(fn ()=>
+            Auth::user()?->can('create categories')),
+        
             ])
             ->actionsColumnLabel('Actions')
             ->defaultSort('nom_categorie');

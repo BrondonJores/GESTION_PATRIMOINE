@@ -24,6 +24,8 @@ class ReportPdfRenderer
         $rowsPerPage = $this->rowsPerPage();
         $chunks = array_chunk($rows, $rowsPerPage);
         $chunks = $chunks === [] ? [[]] : $chunks;
+        $headerImage = $this->theme->headerImage();
+        $footerImage = $this->theme->footerImage();
 
         $streams = [];
 
@@ -37,10 +39,15 @@ class ReportPdfRenderer
                 user: $user,
                 periode: $periode,
                 summary: $summary,
+                hasHeaderImage: $headerImage !== null,
+                hasFooterImage: $footerImage !== null,
             );
         }
 
-        return $this->buildPdf($streams);
+        return $this->buildPdf($streams, [
+            'header' => $headerImage,
+            'footer' => $footerImage,
+        ]);
     }
 
     /**
@@ -72,25 +79,36 @@ class ReportPdfRenderer
      * @param array{debut?: mixed, fin?: mixed} $periode
      * @param array<string, string|int|float> $summary
      */
-    private function renderPage(string $title, array $columns, array $rows, int $page, int $totalPages, ?User $user, array $periode, array $summary): string
+    private function renderPage(string $title, array $columns, array $rows, int $page, int $totalPages, ?User $user, array $periode, array $summary, bool $hasHeaderImage, bool $hasFooterImage): string
     {
         $commands = [];
         $commands[] = $this->theme->backgroundColor() . ' rg 0 0 ' . $this->theme->pageWidth() . ' ' . $this->theme->pageHeight() . ' re f';
 
-        $commands[] = $this->text($this->theme->brandName(), 48, 792, 12, 'F2');
-        $commands[] = $this->text($this->theme->serviceName(), 48, 774, 9);
-        $commands[] = $this->text($this->theme->classificationLabel(), 374, 792, 9, 'F2');
-        $commands[] = $this->text($this->theme->documentNature(), 374, 774, 9);
-        $commands[] = $this->theme->primaryColor() . ' RG 48 750 499 1 re S';
+        if ($hasHeaderImage) {
+            $commands[] = 'q 499 0 0 88 48 742 cm /ImHeader Do Q';
+        } else {
+            $headerTextX = 48;
+            $headerTextY = 792;
 
-        $commands[] = $this->text(strtoupper($this->theme->documentNature()), 218, 714, 13, 'F2');
+            $commands[] = $this->textIfNotBlank($this->theme->brandName(), $headerTextX, $headerTextY, 12, 'F2');
+            $commands[] = $this->textIfNotBlank($this->theme->entityName(), $headerTextX, $headerTextY - 14, 9, 'F2');
+            $commands[] = $this->textIfNotBlank($this->theme->serviceName(), $headerTextX, $headerTextY - 28, 8);
+            $commands[] = $this->textIfNotBlank($this->theme->classificationLabel(), 374, 792, 9, 'F2');
+            $commands[] = $this->textIfNotBlank($this->theme->documentNature(), 374, 774, 9);
+        }
+
+        if (! $hasHeaderImage) {
+            $commands[] = $this->theme->primaryColor() . ' RG 48 750 499 1 re S';
+        }
+
+        $commands[] = $this->textIfNotBlank(strtoupper($this->theme->documentNature()), 218, 714, 13, 'F2');
         $commands[] = $this->text($this->truncate(strtoupper($title), 499, 11), 48, 682, 11, 'F2');
 
         if ($page === 1) {
             $commands = array_merge($commands, $this->renderAdministrativeNotice($title, $user, $periode, $summary));
         }
 
-        $commands[] = $this->text($this->theme->tableTitle(), 48, 408, 10, 'F2');
+        $commands[] = $this->textIfNotBlank($this->theme->tableTitle(), 48, 408, 10, 'F2');
 
         $tableTop = 386;
         $tableLeft = $this->theme->margin();
@@ -121,9 +139,14 @@ class ReportPdfRenderer
             $y -= $this->theme->rowHeight();
         }
 
-        $commands[] = $this->theme->mutedColor() . ' rg ' . $this->theme->margin() . ' 24 ' . $tableWidth . ' 1 re f';
-        $commands[] = $this->text("Page {$page}/{$totalPages}", 482, 20, 9);
-        $commands[] = $this->text($this->theme->footerLabel(), 48, 20, 8);
+        if ($hasFooterImage) {
+            $commands[] = 'q 499 0 0 46 48 10 cm /ImFooter Do Q';
+            $commands[] = $this->text("Page {$page}/{$totalPages}", 482, 20, 8);
+        } else {
+            $commands[] = $this->theme->mutedColor() . ' rg ' . $this->theme->margin() . ' 24 ' . $tableWidth . ' 1 re f';
+            $commands[] = $this->text("Page {$page}/{$totalPages}", 482, 20, 9);
+            $commands[] = $this->text($this->theme->footerLabel(), 48, 20, 8);
+        }
 
         return implode("\n", $commands);
     }
@@ -155,13 +178,33 @@ class ReportPdfRenderer
         $commands[] = $this->text('Date de génération', 58, 588, 8, 'F2');
         $commands[] = $this->text(now()->format('d/m/Y H:i'), 174, 588, 8);
 
+        if ($summary !== []) {
+            $commands[] = $this->text('Synthèse', 48, 548, 10, 'F2');
+
+            $x = 48;
+            $y = 520;
+            $width = 116;
+
+            foreach (array_slice($summary, 0, 4, preserve_keys: true) as $label => $value) {
+                $commands[] = $this->theme->accentColor() . " rg {$x} {$y} {$width} 42 re f";
+                $commands[] = $this->theme->borderColor() . " RG {$x} {$y} {$width} 42 re S";
+                $commands[] = $this->text($this->truncate((string) $label, $width - 12, 8), $x + 6, $y + 27, 8, 'F2');
+                $commands[] = $this->text($this->truncate((string) $value, $width - 12, 11), $x + 6, $y + 10, 11);
+                $x += $width + 10;
+            }
+        }
+
         return $commands;
     }
 
     /**
      * @param array<int, string> $streams
      */
-    private function buildPdf(array $streams): string
+    /**
+     * @param array<int, string> $streams
+     * @param array{header?: array{content: string, width: int, height: int}|null, footer?: array{content: string, width: int, height: int}|null} $images
+     */
+    private function buildPdf(array $streams, array $images = []): string
     {
         $objects = [
             1 => '<< /Type /Catalog /Pages 2 0 R >>',
@@ -169,6 +212,20 @@ class ReportPdfRenderer
             3 => '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>',
             4 => '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>',
         ];
+        $imageIds = [];
+
+        foreach (['header' => 'ImHeader', 'footer' => 'ImFooter'] as $key => $name) {
+            $image = $images[$key] ?? null;
+
+            if ($image === null) {
+                continue;
+            }
+
+            $imageId = count($objects) + 1;
+            $objects[$imageId] = "<< /Type /XObject /Subtype /Image /Width {$image['width']} /Height {$image['height']} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length " . strlen($image['content']) . " >>\nstream\n{$image['content']}\nendstream";
+            $imageIds[$name] = $imageId;
+        }
+
         $kids = [];
 
         foreach ($streams as $stream) {
@@ -176,7 +233,16 @@ class ReportPdfRenderer
             $objects[$contentId] = "<< /Length " . strlen($stream) . " >>\nstream\n{$stream}\nendstream";
 
             $pageId = count($objects) + 1;
-            $objects[$pageId] = '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' . $this->theme->pageWidth() . ' ' . $this->theme->pageHeight() . '] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ' . $contentId . ' 0 R >>';
+            $xObject = '';
+
+            if ($imageIds !== []) {
+                $xObjectItems = collect($imageIds)
+                    ->map(fn (int $id, string $name): string => "/{$name} {$id} 0 R")
+                    ->implode(' ');
+                $xObject = " /XObject << {$xObjectItems} >>";
+            }
+
+            $objects[$pageId] = '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' . $this->theme->pageWidth() . ' ' . $this->theme->pageHeight() . '] /Resources << /Font << /F1 3 0 R /F2 4 0 R >>' . $xObject . ' >> /Contents ' . $contentId . ' 0 R >>';
             $kids[] = "{$pageId} 0 R";
         }
 
@@ -205,6 +271,11 @@ class ReportPdfRenderer
         $color = $white ? '1 1 1 rg' : '0 0 0 rg';
 
         return "{$color} BT /{$font} {$size} Tf {$x} {$y} Td (" . $this->escape($text) . ') Tj ET';
+    }
+
+    private function textIfNotBlank(string $text, float $x, float $y, int $size = 10, string $font = 'F1', bool $white = false): string
+    {
+        return trim($text) === '' ? '' : $this->text($text, $x, $y, $size, $font, $white);
     }
 
     private function truncate(string $value, float $width, int $fontSize): string

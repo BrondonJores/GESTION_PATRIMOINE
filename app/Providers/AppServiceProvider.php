@@ -34,10 +34,11 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(Role::class, RolePolicy::class);
         Gate::policy(Affectation::class, AffectationPolicy::class);
+
         Article::observe(ArticleObserver::class);
         Affectation::observe(AffectationObserver::class);
         Alerte::observe(AlerteObserver::class);
-          Consommable::observe(ConsommableObserver::class);
+        Consommable::observe(ConsommableObserver::class);
         User::observe(UserObserver::class);
     }
 }

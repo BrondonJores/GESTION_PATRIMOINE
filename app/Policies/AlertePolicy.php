@@ -19,7 +19,7 @@ class AlertePolicy
 
     public function create(User $user): bool
     {
-        return false;
+        return $user->can('traiter alertes');
     }
 
     public function update(User $user, Alerte $alerte): bool
@@ -29,7 +29,7 @@ class AlertePolicy
 
     public function delete(User $user, Alerte $alerte): bool
     {
-        return false;
+        return $user->can('delete alertes');
     }
 
     public function restore(User $user, Alerte $alerte): bool

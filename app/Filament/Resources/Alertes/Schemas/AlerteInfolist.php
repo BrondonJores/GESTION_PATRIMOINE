@@ -24,12 +24,12 @@ class AlerteInfolist
                         'md' => 3,
                     ])
                     ->schema([
-                        TextEntry::make('article.designation')
-                            ->label('Article concerné')
+                        TextEntry::make('consommable.designation')
+                            ->label('Consommable concerné')
                             ->icon(Heroicon::OutlinedCube)
                             ->size(TextSize::Medium)
                             ->weight(FontWeight::SemiBold)
-                            ->placeholder('Article indisponible')
+                            ->placeholder('Consommable indisponible')
                             ->columnSpanFull(),
                         TextEntry::make('statut')
                             ->label('Statut')

@@ -9,6 +9,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class CategoriesTable
 {
@@ -182,10 +183,25 @@ class CategoriesTable
                 SelectFilter::make('famille_id')
                     ->label('Famille')
                     ->relationship('famille', 'nom_famille'),
+
+            
             ])
 
             ->recordActions([
-                EditAction::make(),
+               EditAction::make()
+        ->visible(fn () =>
+            Auth::user()?->can('update categories') ?? false
+        ),
+           DeleteAction::make()
+        ->requiresConfirmation()
+        ->visible(fn () =>
+            Auth::user()?->can('delete categories') ?? false
+        ),
+      CreateAction::make()
+        ->visible(fn ()=>
+            Auth::user()?->can('create categories')),
+       
+
             ])
             ->actionsColumnLabel('Actions')
             ->defaultSort('nom_categorie');

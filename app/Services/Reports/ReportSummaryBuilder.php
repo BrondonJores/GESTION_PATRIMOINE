@@ -13,8 +13,13 @@ class ReportSummaryBuilder
         return match ($typeRapport) {
             'Inventaire des articles' => [
                 'Articles' => count($rows),
-                'Quantité totale' => $this->sum($rows, 'Quantité'),
-                'Sous seuil' => $this->countBelowThreshold($rows),
+                'Disponibles' => $this->countWhere($rows, 'Statut', 'Disponible'),
+                'Affectés' => $this->countWhere($rows, 'Statut', 'Affecté'),
+            ],
+            'Rapport par bloc', 'Rapport par salle' => [
+                'Articles' => $this->sum($rows, 'Total articles'),
+                'Catégories' => collect($rows)->pluck('Catégorie')->filter()->unique()->count(),
+                'Groupes' => count($rows),
             ],
             'Alertes' => [
                 'Alertes' => count($rows),
@@ -58,20 +63,4 @@ class ReportSummaryBuilder
             ->count();
     }
 
-    /**
-     * @param array<int, array<string, mixed>> $rows
-     */
-    private function countBelowThreshold(array $rows): int
-    {
-        return collect($rows)
-            ->filter(function (array $row): bool {
-                $quantite = $row['Quantité'] ?? null;
-                $seuil = $row['Seuil minimum'] ?? null;
-
-                return is_numeric($quantite)
-                    && is_numeric($seuil)
-                    && (float) $quantite <= (float) $seuil;
-            })
-            ->count();
-    }
 }

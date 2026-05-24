@@ -15,17 +15,18 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use UnitEnum;
 
+
 class AuditLogResource extends Resource
 {
     protected static ?string $model = AuditLog::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;
 
-    protected static ?string $navigationLabel = 'Logs';
+    protected static ?string $navigationLabel = 'Historique';
 
-    protected static ?string $modelLabel = 'log';
+    protected static ?string $modelLabel = 'Historique';
 
-    protected static ?string $pluralModelLabel = 'logs';
+    protected static ?string $pluralModelLabel = 'Historiques';
 
     protected static string|UnitEnum|null $navigationGroup = 'Support & Admin';
 

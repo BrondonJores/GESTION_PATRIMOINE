@@ -5,10 +5,12 @@ namespace App\Filament\Resources\Articles\Tables;
 
 use App\Models\Article;
 use App\Models\Famille;
+use App\Services\ArticleImportService;
 use App\Services\ArticleService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
@@ -17,6 +19,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 
 class ArticlesTable
@@ -82,17 +85,22 @@ class ArticlesTable
                     ->relationship('categorie', 'nom_categorie'),
             ])
 
-            ->recordActions([
-                EditAction::make(),
+               ->recordActions([
+                EditAction::make()
+                    ->visible(fn () =>
+                        Auth::user()?->can('update articles') ?? false
+                    ),
 
                 // ── MAINTENANCE ────────────────────────────────────
                 Action::make('maintenance')
                     ->label('Maintenance')
                     ->icon('heroicon-m-wrench-screwdriver')
                     ->color('warning')
-                    ->disabled(fn(Article $r) => !$r->estDisponible())
-                    ->tooltip(
-                        fn(Article $r) =>
+                    ->visible(fn () =>
+                        Auth::user()?->hasAnyRole(['admin', 'gestionnaire']) ?? false
+                    )
+                    ->disabled(fn (Article $r) => !$r->estDisponible())
+                    ->tooltip(fn (Article $r) =>
                         !$r->estDisponible()
                             ? "Statut actuel : {$r->statut} — seul un article Disponible peut être mis en maintenance"
                             : 'Mettre en maintenance'
@@ -100,21 +108,14 @@ class ArticlesTable
                     ->form([
                         Textarea::make('motif')
                             ->label('Motif de la maintenance')
-                            ->required()
-                            ->rows(2),
+                            ->required()->rows(2),
                     ])
                     ->action(function (Article $record, array $data) {
                         try {
-                            app(ArticleService::class)
-                                ->mettreEnMaintenance($record, $data['motif']);
-                            Notification::make()
-                                ->title('Mise en maintenance enregistrée')
-                                ->success()->send();
+                            app(ArticleService::class)->mettreEnMaintenance($record, $data['motif']);
+                            Notification::make()->title('Mise en maintenance enregistrée')->success()->send();
                         } catch (\Exception $e) {
-                            Notification::make()
-                                ->title('Erreur')
-                                ->body($e->getMessage())
-                                ->danger()->send();
+                            Notification::make()->title('Erreur')->body($e->getMessage())->danger()->send();
                         }
                     }),
 
@@ -123,9 +124,11 @@ class ArticlesTable
                     ->label('Retour maintenance')
                     ->icon('heroicon-m-arrow-uturn-left')
                     ->color('info')
-                    ->disabled(fn(Article $r) => !$r->estEnMaintenance())
-                    ->tooltip(
-                        fn(Article $r) =>
+                    ->visible(fn () =>
+                        Auth::user()?->hasAnyRole(['admin', 'gestionnaire']) ?? false
+                    )
+                    ->disabled(fn (Article $r) => !$r->estEnMaintenance())
+                    ->tooltip(fn (Article $r) =>
                         !$r->estEnMaintenance()
                             ? "Statut actuel : {$r->statut} — action non applicable"
                             : 'Remettre en stock disponible'
@@ -133,25 +136,23 @@ class ArticlesTable
                     ->action(function (Article $record) {
                         try {
                             app(ArticleService::class)->retourMaintenance($record);
-                            Notification::make()
-                                ->title('Retour en service enregistré')
-                                ->success()->send();
+                            Notification::make()->title('Retour en service enregistré')->success()->send();
                         } catch (\Exception $e) {
-                            Notification::make()
-                                ->title('Erreur')
-                                ->body($e->getMessage())
-                                ->danger()->send();
+                            Notification::make()->title('Erreur')->body($e->getMessage())->danger()->send();
                         }
                     }),
 
-                // RÉFORMER
+                // ── RÉFORMER ───────────────────────────────────────
+                // Admin uniquement
                 Action::make('reformer')
                     ->label('Réformer')
                     ->icon('heroicon-m-archive-box-x-mark')
                     ->color('danger')
-                    ->disabled(fn(Article $r) => $r->estAffecte() || $r->estReforme())
-                    ->tooltip(
-                        fn(Article $r) =>
+                    ->visible(fn () =>
+                        Auth::user()?->hasRole('admin') ?? false
+                    )
+                    ->disabled(fn (Article $r) => $r->estAffecte() || $r->estReforme())
+                    ->tooltip(fn (Article $r) =>
                         $r->estReforme()
                             ? 'Déjà réformé'
                             : ($r->estAffecte()
@@ -159,74 +160,94 @@ class ArticlesTable
                                 : 'Réformer définitivement cet article')
                     )
                     ->modalHeading('Réformer cet article')
+                    ->modalDescription('Action irréversible sauf par l\'administrateur.')
                     ->modalSubmitActionLabel('Confirmer la réforme')
                     ->form([
                         Textarea::make('motif')
                             ->label('Motif de réforme')
-                            ->required()
-                            ->rows(2)
-                            ->helperText('Cette action est irréversible sauf par l\'administrateur.'),
+                            ->required()->rows(2),
                     ])
                     ->action(function (Article $record, array $data) {
                         try {
                             app(ArticleService::class)->reformer($record, $data['motif']);
-                            Notification::make()
-                                ->title('Article réformé')
-                                ->success()
-                                ->send();
+                            Notification::make()->title('Article réformé')->success()->send();
                         } catch (\Exception $e) {
-                            Notification::make()
-                                ->title('Erreur')
-                                ->body($e->getMessage())
-                                ->danger()
-                                ->send();
+                            Notification::make()->title('Erreur')->body($e->getMessage())->danger()->send();
                         }
                     }),
-                // ── RÉINTÉGRER 
+
+                // ── RÉINTÉGRER ─────────────────────────────────────
+                // Admin uniquement
                 Action::make('reintegrer')
                     ->label('Réintégrer')
                     ->icon('heroicon-m-arrow-path')
                     ->color('success')
-                    ->disabled(
-                        fn(Article $r) =>
-                        !Auth::user()?->hasRole('admin') || !$r->estReforme()
+                    ->visible(fn () =>
+                        Auth::user()?->hasRole('admin') ?? false
                     )
-                    ->tooltip(
-                        fn(Article $r) =>
-                        !Auth::user()?->hasRole('admin')
-                            ? 'Action réservée à l\'administrateur'
-                            : (!$r->estReforme()
-                                ? "Statut actuel : {$r->statut} — seul un article Réformé peut être réintégré"
-                                : 'Réintégrer dans le stock disponible')
+                    ->disabled(fn (Article $r) => !$r->estReforme())
+                    ->tooltip(fn (Article $r) =>
+                        !$r->estReforme()
+                            ? "Statut actuel : {$r->statut} — seul un article Réformé peut être réintégré"
+                            : 'Réintégrer dans le stock disponible'
                     )
                     ->modalHeading('Réintégrer cet article')
+                    ->modalDescription('L\'article repassera au statut Disponible.')
                     ->modalSubmitActionLabel('Confirmer la réintégration')
                     ->form([
                         Textarea::make('motif')
                             ->label('Motif de réintégration')
-                            ->required()
-                            ->rows(2)
-                            ->helperText('L\'article repassera au statut Disponible.'),
+                            ->required()->rows(2),
                     ])
                     ->action(function (Article $record, array $data) {
                         try {
                             app(ArticleService::class)->reintegrer($record, $data['motif']);
-                            Notification::make()
-                                ->title('Article réintégré')
-                                ->body('L\'article est de nouveau disponible.')
-                                ->success()
-                                ->send();
+                            Notification::make()->title('Article réintégré')->success()->send();
                         } catch (\Exception $e) {
-                            Notification::make()
-                                ->title('Erreur')
-                                ->body($e->getMessage())
-                                ->danger()
-                                ->send();
+                            Notification::make()->title('Erreur')->body($e->getMessage())->danger()->send();
                         }
                     }),
             ])
             ->actionsColumnLabel('Actions')
             ->toolbarActions([
+                Action::make('telecharger_canevas')
+                    ->label('Canevas CSV')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->action(fn () => response()->streamDownload(
+                        fn () => print app(ArticleImportService::class)->csvTemplate(),
+                        'canevas-articles.csv',
+                        ['Content-Type' => 'text/csv; charset=UTF-8'],
+                    )),
+                Action::make('importer')
+                    ->label('Importer')
+                    ->icon('heroicon-o-arrow-up-tray')
+                    ->color('primary')
+                    ->visible(fn () => Auth::user()?->can('create articles') ?? false)
+                    ->form([
+                        FileUpload::make('fichier')
+                            ->label('Fichier CSV')
+                            ->disk('local')
+                            ->directory('imports/articles')
+                            ->acceptedFileTypes(['text/csv', 'text/plain', 'application/vnd.ms-excel'])
+                            ->required(),
+                    ])
+                    ->action(function (array $data): void {
+                        $path = is_array($data['fichier']) ? reset($data['fichier']) : $data['fichier'];
+                        $result = app(ArticleImportService::class)->importCsv(Storage::disk('local')->path($path));
+                        Storage::disk('local')->delete($path);
+
+                        $body = "{$result['created']} créé(s), {$result['updated']} mis à jour, {$result['skipped']} ignoré(s).";
+
+                        if ($result['errors'] !== []) {
+                            $body .= "\n" . implode("\n", array_slice($result['errors'], 0, 5));
+                        }
+
+                        Notification::make()
+                            ->title('Import terminé')
+                            ->body($body)
+                            ->success()
+                            ->send();
+                    }),
                 BulkActionGroup::make([]),
             ])
             ->defaultSort('created_at', 'desc');

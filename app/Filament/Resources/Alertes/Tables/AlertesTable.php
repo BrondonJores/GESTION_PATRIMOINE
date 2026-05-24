@@ -19,8 +19,8 @@ class AlertesTable
     {
         return $table
             ->columns([
-                TextColumn::make('article.designation')
-                    ->label('Article')
+                TextColumn::make('consommable.designation')
+                    ->label('Consommable')
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('type_alerte')

@@ -12,6 +12,7 @@ use App\Models\Recuperation;
 use App\Models\User;
 use App\Support\Alertes\StockAlertType;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
 class ReportRowsBuilder
 {
@@ -30,13 +31,12 @@ class ReportRowsBuilder
                 ->map(fn (Article $article): array => [
                     'Référence' => $article->numero_reference,
                     'Désignation' => $article->designation,
-                    'Quantité' => $article->quantite,
-                    'Seuil minimum' => $article->quantite_min,
                     'Statut' => $article->statut,
-                    'État' => $article->etat,
                     'Catégorie' => $article->categorie?->nom_categorie,
                 ])
                 ->all(),
+            'Rapport par bloc' => $this->rapportParBloc($data),
+            'Rapport par salle' => $this->rapportParSalle($data),
             'Affectations' => Affectation::query()
                 ->with(['article', 'salle'])
                 ->tap(fn (Builder $query): Builder => $this->filtrerPeriode($query, 'created_at', $data))
@@ -72,12 +72,12 @@ class ReportRowsBuilder
                 ])
                 ->all(),
             'Alertes' => Alerte::query()
-                ->with('article')
+                ->with('consommable')
                 ->tap(fn (Builder $query): Builder => $this->filtrerPeriode($query, 'date_alerte', $data))
                 ->limit(5000)
                 ->get()
                 ->map(fn (Alerte $alerte): array => [
-                    'Article' => $alerte->article?->designation,
+                    'Consommable' => $alerte->consommable?->designation,
                     "Type d'alerte" => StockAlertType::label($alerte->type_alerte),
                     'Statut' => $alerte->statut,
                     'Canal' => $alerte->canal,
@@ -121,6 +121,84 @@ class ReportRowsBuilder
                 ->all(),
             default => [],
         };
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<int, array<string, mixed>>
+     */
+    private function rapportParBloc(array $data): array
+    {
+        return Affectation::query()
+            ->join('articles', 'articles.id', '=', 'affectations.article_id')
+            ->join('categories', 'categories.id', '=', 'articles.categorie_id')
+            ->leftJoin('salles', 'salles.id', '=', 'affectations.salle_id')
+            ->join('blocs', function ($join): void {
+                $join->on('blocs.id', '=', 'affectations.bloc_id')
+                    ->orOn('blocs.id', '=', 'salles.bloc_id');
+            })
+            ->where('affectations.type', 'article')
+            ->whereNull('affectations.date_recuperation')
+            ->tap(fn (Builder $query): Builder => $this->filtrerPeriode($query, 'affectations.created_at', $data))
+            ->groupBy('blocs.nom_bloc', 'categories.nom_categorie', 'articles.designation', 'articles.statut')
+            ->orderBy('blocs.nom_bloc')
+            ->orderBy('categories.nom_categorie')
+            ->orderBy('articles.designation')
+            ->limit(5000)
+            ->get([
+                'blocs.nom_bloc as bloc',
+                'categories.nom_categorie as categorie',
+                'articles.designation as designation',
+                'articles.statut as statut',
+                DB::raw('COUNT(DISTINCT articles.id) as total_articles'),
+            ])
+            ->map(fn (object $row): array => [
+                'Bloc' => $row->bloc,
+                'Catégorie' => $row->categorie,
+                'Détail' => $row->designation,
+                'Statut' => $row->statut,
+                'Total articles' => (int) $row->total_articles,
+            ])
+            ->all();
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<int, array<string, mixed>>
+     */
+    private function rapportParSalle(array $data): array
+    {
+        return Affectation::query()
+            ->join('articles', 'articles.id', '=', 'affectations.article_id')
+            ->join('categories', 'categories.id', '=', 'articles.categorie_id')
+            ->join('salles', 'salles.id', '=', 'affectations.salle_id')
+            ->join('blocs', 'blocs.id', '=', 'salles.bloc_id')
+            ->where('affectations.type', 'article')
+            ->whereNull('affectations.date_recuperation')
+            ->tap(fn (Builder $query): Builder => $this->filtrerPeriode($query, 'affectations.created_at', $data))
+            ->groupBy('blocs.nom_bloc', 'salles.nom_salle', 'categories.nom_categorie', 'articles.designation', 'articles.statut')
+            ->orderBy('blocs.nom_bloc')
+            ->orderBy('salles.nom_salle')
+            ->orderBy('categories.nom_categorie')
+            ->orderBy('articles.designation')
+            ->limit(5000)
+            ->get([
+                'blocs.nom_bloc as bloc',
+                'salles.nom_salle as salle',
+                'categories.nom_categorie as categorie',
+                'articles.designation as designation',
+                'articles.statut as statut',
+                DB::raw('COUNT(DISTINCT articles.id) as total_articles'),
+            ])
+            ->map(fn (object $row): array => [
+                'Bloc' => $row->bloc,
+                'Salle' => $row->salle,
+                'Catégorie' => $row->categorie,
+                'Détail' => $row->designation,
+                'Statut' => $row->statut,
+                'Total articles' => (int) $row->total_articles,
+            ])
+            ->all();
     }
 
     /**

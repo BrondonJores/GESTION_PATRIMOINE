@@ -8,6 +8,7 @@ use Filament\Actions\EditAction;
 use Filament\Actions\DeleteAction; 
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 
 class FamillesTable
 {
@@ -32,9 +33,16 @@ class FamillesTable
                 //
             ])
             ->recordActions([
-                EditAction::make(),
-                 DeleteAction::make()
-                    ->requiresConfirmation(),
+                EditAction::make()
+        ->visible(fn () =>
+            Auth::user()?->can('update familles') ?? false
+        ),
+
+    DeleteAction::make()
+        ->requiresConfirmation()
+        ->visible(fn () =>
+            Auth::user()?->can('delete familles') ?? false
+        ),
             ])
             ->actionsColumnLabel('Actions')
             ->toolbarActions([

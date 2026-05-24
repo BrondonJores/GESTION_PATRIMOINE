@@ -5,9 +5,12 @@ namespace App\Filament\Resources\Consommables\Pages;
 use App\Filament\Resources\Consommables\ConsommableResource;
 use Filament\Resources\Pages\CreateRecord;
 use Filament\Notifications\Notification;
+
+
 class CreateConsommable extends CreateRecord
 {
     protected static string $resource = ConsommableResource::class;
+
 
      protected function mutateFormDataBeforeCreate(array $data): array
     {
@@ -41,13 +44,6 @@ class CreateConsommable extends CreateRecord
             $this->notifierErreur("Le seuil minimal ne peut pas être négatif.");
         }
 
-        // Règle 3 : quantité ne peut pas être inférieure au seuil
-        if (!is_null($quantiteMin) && $quantite < $quantiteMin) {
-            $this->notifierErreur(
-                "La quantité en stock ({$quantite}) ne peut pas être " .
-                "inférieure au seuil minimal ({$quantiteMin})."
-            );
-        }
     }
 
     private function notifierErreur(string $message): never

@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\Consommables\Tables;
 
 use App\Models\Consommable;
-use App\Models\Categorie;
+use App\Services\ConsommableImportService;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -11,8 +11,12 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\FileUpload;
 use Filament\Notifications\Notification;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+
+
 
 class ConsommablesTable
 {
@@ -20,6 +24,10 @@ class ConsommablesTable
     {
         return $table
             ->columns([
+                TextColumn::make('reference')
+                    ->label('Référence')
+                    ->searchable()
+                    ->placeholder('—'),
              
                 TextColumn::make('designation')
                     ->label('Désignation')
@@ -65,12 +73,18 @@ class ConsommablesTable
             ])
 
             ->recordActions([
-                EditAction::make(),
+            EditAction::make()
+        ->visible(fn () =>
+            Auth::user()?->can('update articles') ?? false
+        ),
 
                 Action::make('reapprovisionner')
                     ->label('Réapprovisionner')
                     ->icon('heroicon-o-plus-circle')
                     ->color('success')
+                     ->visible(fn () =>
+            Auth::user()?->hasAnyRole(['admin', 'gestionnaire']) ?? false
+        )
                     ->form([
                         \Filament\Forms\Components\TextInput::make('quantite')
                             ->numeric()
@@ -90,6 +104,43 @@ class ConsommablesTable
             ])
             ->actionsColumnLabel('Actions')
             ->toolbarActions([
+                Action::make('telecharger_canevas')
+                    ->label('Canevas CSV')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->action(fn () => response()->streamDownload(
+                        fn () => print app(ConsommableImportService::class)->csvTemplate(),
+                        'canevas-consommables.csv',
+                        ['Content-Type' => 'text/csv; charset=UTF-8'],
+                    )),
+                Action::make('importer')
+                    ->label('Importer')
+                    ->icon('heroicon-o-arrow-up-tray')
+                    ->color('primary')
+                    ->form([
+                        FileUpload::make('fichier')
+                            ->label('Fichier CSV')
+                            ->disk('local')
+                            ->directory('imports/consommables')
+                            ->acceptedFileTypes(['text/csv', 'text/plain', 'application/vnd.ms-excel'])
+                            ->required(),
+                    ])
+                    ->action(function (array $data): void {
+                        $path = is_array($data['fichier']) ? reset($data['fichier']) : $data['fichier'];
+                        $result = app(ConsommableImportService::class)->importCsv(Storage::disk('local')->path($path));
+                        Storage::disk('local')->delete($path);
+
+                        $body = "{$result['created']} créé(s), {$result['updated']} mis à jour, {$result['skipped']} ignoré(s).";
+
+                        if ($result['errors'] !== []) {
+                            $body .= "\n" . implode("\n", array_slice($result['errors'], 0, 5));
+                        }
+
+                        Notification::make()
+                            ->title('Import terminé')
+                            ->body($body)
+                            ->success()
+                            ->send();
+                    }),
                 BulkActionGroup::make([]),
             ]);
     }
