@@ -11,14 +11,13 @@ class Salle extends Model
     protected $fillable = [
         'code_salle',
         'nom_salle',
-        'capacite',
         'actif',
         'bloc_id',
     ];
 
     protected $casts = [
         'actif'    => 'boolean',
-        'capacite' => 'integer',
+        
     ];
 
     public function bloc(): BelongsTo

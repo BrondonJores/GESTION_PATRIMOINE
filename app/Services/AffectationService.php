@@ -20,24 +20,7 @@ class AffectationService
 
     private function verifierCapaciteSalle(?int $salleId): void
     {
-        if (!$salleId) return;
-
-        $salle = Salle::findOrFail($salleId);
-
-        if (!$salle->capacite) return;
-
-        $nbAffectes = Affectation::where('salle_id', $salleId)
-            ->where('type', 'article')
-            ->whereNull('date_recuperation')
-            ->count();
-
-        if ($nbAffectes >= $salle->capacite) {
-            throw new Exception(
-                "La salle {$salle->nom_salle} est pleine. " .
-                "Capacité maximale : {$salle->capacite} articles. " .
-                "Actuellement : {$nbAffectes} articles affectés."
-            );
-        }
+        
     }
 
     // ══════════════════════════════════════════════════════════════
