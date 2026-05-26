@@ -6,6 +6,7 @@ use App\Models\Affectation;
 use App\Models\Alerte;
 use App\Models\Article;
 use App\Models\AuditLog;
+use App\Models\Consommable;
 use App\Models\Notification;
 use App\Models\Reaffectation;
 use App\Models\Recuperation;
@@ -35,17 +36,37 @@ class ReportRowsBuilder
                     'Catégorie' => $article->categorie?->nom_categorie,
                 ])
                 ->all(),
+            'Inventaire des consommables' => Consommable::query()
+                ->with('categorie')
+                ->tap(fn (Builder $query): Builder => $this->filtrerPeriode($query, 'created_at', $data))
+                ->orderBy('designation')
+                ->limit(5000)
+                ->get()
+                ->map(fn (Consommable $consommable): array => [
+                    'Désignation' => $consommable->designation,
+                    'Catégorie' => $consommable->categorie?->nom_categorie,
+                    'Stock actuel' => $consommable->quantite_stock,
+                    'Seuil minimal' => $consommable->quantite_min,
+                    'Statut' => $consommable->statut,
+                ])
+                ->all(),
             'Rapport par bloc' => $this->rapportParBloc($data),
             'Rapport par salle' => $this->rapportParSalle($data),
             'Affectations' => Affectation::query()
-                ->with(['article', 'salle'])
-                ->tap(fn (Builder $query): Builder => $this->filtrerPeriode($query, 'created_at', $data))
+                ->with(['article', 'bloc', 'salle'])
+                ->where('type', 'article')
+                ->tap(fn (Builder $query): Builder => $this->filtrerPeriode($query, 'date_affectation', $data))
+                ->orderByDesc('date_affectation')
                 ->limit(5000)
                 ->get()
                 ->map(fn (Affectation $affectation): array => [
+                    'Référence' => $affectation->article?->numero_reference,
                     'Article' => $affectation->article?->designation,
+                    'Bloc' => $affectation->bloc?->nom_bloc,
                     'Salle' => $affectation->salle?->nom_salle,
                     'Quantité' => $affectation->quantite,
+                    'Statut affectation' => $affectation->date_recuperation === null ? 'Active' : 'Récupérée',
+                    'Date affectation' => $affectation->date_affectation,
                     'Date de récupération' => $affectation->date_recuperation,
                 ])
                 ->all(),

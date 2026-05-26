@@ -21,6 +21,7 @@ class RapportForm
                             ->label('Type de rapport')
                             ->options([
                                 'Inventaire des articles' => 'Inventaire des articles',
+                                'Inventaire des consommables' => 'Inventaire des consommables',
                                 'Rapport par bloc' => 'Rapport par bloc',
                                 'Rapport par salle' => 'Rapport par salle',
                                 'Affectations' => 'Affectations',

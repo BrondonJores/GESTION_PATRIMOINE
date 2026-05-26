@@ -17,7 +17,9 @@ class DatabaseSeeder extends Seeder
     {
         // Décommentez pour générer plusieurs utilisateurs de test.
 
-        $this->call(RolePermissionSeeder::class);
+        $this->call([
+            RolePermissionSeeder::class,
+        ]);
 
         $admin = User::query()->firstOrCreate(
             ['email' => 'test@example.com'],

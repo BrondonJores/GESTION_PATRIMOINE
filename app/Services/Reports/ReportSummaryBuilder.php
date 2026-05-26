@@ -2,6 +2,8 @@
 
 namespace App\Services\Reports;
 
+use App\Models\Article;
+
 class ReportSummaryBuilder
 {
     /**
@@ -13,13 +15,26 @@ class ReportSummaryBuilder
         return match ($typeRapport) {
             'Inventaire des articles' => [
                 'Articles' => count($rows),
+                'Affectés' => $this->countWhere($rows, 'Statut', Article::AFFECTE),
+                'Disponibles' => $this->countWhere($rows, 'Statut', Article::DISPONIBLE),
+                'Réformés' => $this->countWhere($rows, 'Statut', Article::REFORME),
+            ],
+            'Inventaire des consommables' => [
+                'Consommables' => count($rows),
                 'Disponibles' => $this->countWhere($rows, 'Statut', 'Disponible'),
-                'Affectés' => $this->countWhere($rows, 'Statut', 'Affecté'),
+                'Sous seuil' => $this->countWhere($rows, 'Statut', 'Sous seuil'),
+                'Épuisés' => $this->countWhere($rows, 'Statut', 'Épuisé'),
             ],
             'Rapport par bloc', 'Rapport par salle' => [
                 'Articles' => $this->sum($rows, 'Total articles'),
                 'Catégories' => collect($rows)->pluck('Catégorie')->filter()->unique()->count(),
                 'Groupes' => count($rows),
+            ],
+            'Affectations' => [
+                'Affectations' => count($rows),
+                'Actives' => $this->countWhere($rows, 'Statut affectation', 'Active'),
+                'Récupérées' => $this->countWhere($rows, 'Statut affectation', 'Récupérée'),
+                'Articles distincts' => collect($rows)->pluck('Référence')->filter()->unique()->count(),
             ],
             'Alertes' => [
                 'Alertes' => count($rows),

@@ -22,7 +22,7 @@
         placement="bottom-start"
         width="md"
         max-height="24rem"
-        class="me-2"
+        class="me-3"
     >
         <x-slot name="trigger">
             <x-filament::icon-button
