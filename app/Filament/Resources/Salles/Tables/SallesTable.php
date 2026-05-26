@@ -29,8 +29,7 @@ class SallesTable
                     ->label('Bloc')
                     ->sortable(),
 
-                TextColumn::make('capacite')
-                    ->label('Capacité'),
+                
 
                 ToggleColumn::make('actif')
                     ->label('Active'),
