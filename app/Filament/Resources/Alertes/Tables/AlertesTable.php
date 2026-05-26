@@ -75,7 +75,8 @@ class AlertesTable
                     ->label('Prendre en charge')
                     ->icon(Heroicon::OutlinedClock)
                     ->color('warning')
-                    ->visible(fn (Alerte $record): bool => $record->statut === 'Non_traité')
+                    ->visible(fn (Alerte $record): bool => $record->statut === 'Non_traité'
+                        && (auth()->user()?->can('update', $record) ?? false))
                     ->action(fn (Alerte $record): Alerte => app(AlerteStatusService::class)->prendreEnCharge($record)),
                 Action::make('marquer_resolue')
                     ->label('Marquer résolue')
@@ -87,7 +88,8 @@ class AlertesTable
                             ->required()
                             ->maxLength(1000),
                     ])
-                    ->visible(fn (Alerte $record): bool => $record->statut !== 'Résolu')
+                    ->visible(fn (Alerte $record): bool => $record->statut !== 'Résolu'
+                        && (auth()->user()?->can('update', $record) ?? false))
                     ->action(fn (Alerte $record, array $data): Alerte => app(AlerteStatusService::class)->marquerResolue(
                         $record,
                         $data['note_resolution'] ?? null,

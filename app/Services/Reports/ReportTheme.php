@@ -35,12 +35,12 @@ class ReportTheme
 
     public function margin(): int
     {
-        return 42;
+        return 48;
     }
 
     public function rowHeight(): int
     {
-        return 24;
+        return 28;
     }
 
     public function headerHeight(): int
@@ -60,27 +60,27 @@ class ReportTheme
 
     public function primaryColor(): string
     {
-        return '0.05 0.05 0.05';
+        return '0 0 0';
     }
 
     public function accentColor(): string
     {
-        return '0.93 0.93 0.93';
+        return '1 1 1';
     }
 
     public function borderColor(): string
     {
-        return '0.70 0.70 0.70';
+        return '0 0 0';
     }
 
     public function mutedColor(): string
     {
-        return '0.35 0.35 0.35';
+        return '0 0 0';
     }
 
     public function alternateRowColor(): string
     {
-        return '0.97 0.97 0.97';
+        return '1 1 1';
     }
 
     public function brandName(): string

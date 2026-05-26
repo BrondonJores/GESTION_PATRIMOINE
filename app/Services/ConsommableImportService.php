@@ -65,8 +65,8 @@ class ConsommableImportService
     public function csvTemplate(): string
     {
         return implode("\n", [
-            'reference;designation;categorie;quantite_stock;quantite_min;observations',
-            'CONS-MARQ-BLEU;Marqueur bleu;Fournitures;120;20;Exemple de ligne',
+            'designation;categorie;quantite_stock;quantite_min;observations',
+            'Marqueur bleu;Fournitures;120;20;Exemple de ligne',
             '',
         ]);
     }
@@ -128,14 +128,8 @@ class ConsommableImportService
         $categorie = $this->resolveCategorie($categoryValue);
         $quantiteStock = $this->positiveInteger($row['quantite_stock'] ?? null, 'quantite_stock');
         $quantiteMin = $this->nullablePositiveInteger($row['quantite_min'] ?? null, 'quantite_min');
-        $reference = $this->blankToNull($row['reference'] ?? null);
-
-        $attributes = $reference !== null
-            ? ['reference' => $reference]
-            : ['designation' => $designation, 'categorie_id' => $categorie->id];
 
         $values = [
-            'reference' => $reference,
             'designation' => $designation,
             'categorie_id' => $categorie->id,
             'quantite_stock' => $quantiteStock,
@@ -144,7 +138,10 @@ class ConsommableImportService
         ];
         $values['statut'] = (new Consommable($values))->calculerStatut();
 
-        $consommable = Consommable::query()->firstOrNew($attributes);
+        $consommable = Consommable::query()->firstOrNew([
+            'designation' => $designation,
+            'categorie_id' => $categorie->id,
+        ]);
         $exists = $consommable->exists;
         $consommable->fill($values);
         $consommable->save();

@@ -54,12 +54,14 @@ class NotificationsTable
                 Action::make('marquer_comme_lue')
                     ->label('Marquer comme lue')
                     ->icon(Heroicon::OutlinedCheckCircle)
-                    ->visible(fn (Notification $record): bool => ! $record->lu)
+                    ->visible(fn (Notification $record): bool => ! $record->lu
+                        && (auth()->user()?->can('update', $record) ?? false))
                     ->action(fn (Notification $record): bool => $record->forceFill(['lu' => true])->save()),
                 Action::make('marquer_comme_non_lue')
                     ->label('Marquer comme non lue')
                     ->icon(Heroicon::OutlinedEnvelope)
-                    ->visible(fn (Notification $record): bool => $record->lu)
+                    ->visible(fn (Notification $record): bool => $record->lu
+                        && (auth()->user()?->can('update', $record) ?? false))
                     ->action(fn (Notification $record): bool => $record->forceFill(['lu' => false])->save()),
             ])
             ->toolbarActions([]);

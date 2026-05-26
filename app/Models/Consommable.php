@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Consommable extends Model
 {
     protected $fillable = [
-        'reference',
         'designation',
         'categorie_id',
         'quantite_stock',

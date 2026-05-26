@@ -25,7 +25,8 @@ class NotificationPolicy
 
     public function update(User $user, Notification $notification): bool
     {
-        return $user->can('view notifications');
+        return $user->can('view notifications')
+            && ($notification->user_id === null || $notification->user_id === $user->id || $user->hasRole('admin'));
     }
 
     public function delete(User $user, Notification $notification): bool

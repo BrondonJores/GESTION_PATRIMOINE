@@ -162,7 +162,7 @@ class RapportService
 
         foreach ($rows as $row) {
             $normalized[] = array_map(
-                fn (mixed $value): mixed => is_scalar($value) || $value === null
+                fn (mixed $value): mixed => is_scalar($value) || $value === null || $value instanceof \DateTimeInterface
                     ? $value
                     : json_encode($value, JSON_UNESCAPED_UNICODE),
                 $row instanceof Arrayable ? $row->toArray() : $row,

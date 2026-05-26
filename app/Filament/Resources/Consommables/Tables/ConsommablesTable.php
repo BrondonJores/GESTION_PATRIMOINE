@@ -24,11 +24,6 @@ class ConsommablesTable
     {
         return $table
             ->columns([
-                TextColumn::make('reference')
-                    ->label('Référence')
-                    ->searchable()
-                    ->placeholder('—'),
-             
                 TextColumn::make('designation')
                     ->label('Désignation')
                     ->searchable(),
