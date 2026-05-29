@@ -29,7 +29,7 @@ class AlerteCounterService
         }
 
         return Alerte::query()
-            ->with('article')
+            ->with('consommable')
             ->where('statut', '!=', 'Résolu')
             ->latest('date_alerte')
             ->limit($limit)
