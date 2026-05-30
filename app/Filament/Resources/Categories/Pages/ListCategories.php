@@ -90,9 +90,7 @@ class ListCategories extends ListRecords
             Auth::user()?->can('delete categories') ?? false
 
         ),
-           CreateAction::make()
-        ->visible(fn ()=>
-            Auth::user()?->can('create categories')),
+ 
         
             ])
             ->actionsColumnLabel('Actions')

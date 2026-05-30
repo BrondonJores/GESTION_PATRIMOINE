@@ -63,7 +63,7 @@ class ConsommablesTable
                         'Épuisé' => 'Épuisé',
                     ]),
 
-                SelectFilter::make('categorie_id')
+                SelectFilter::make('categorie')
                     ->relationship('categorie', 'nom_categorie'),
             ])
 

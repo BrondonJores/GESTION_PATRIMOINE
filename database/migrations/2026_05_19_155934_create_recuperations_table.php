@@ -13,8 +13,7 @@ return new class extends Migration
 {
     Schema::create('recuperations', function (Blueprint $table) {
         $table->id();
-        $table->integer('quantite');
-        $table->enum('etat', ['Disponible', 'En_maintenance', 'Réformé'])->default('Disponible');
+        $table->integer('quantite')->unsigned();
         $table->text('observations')->nullable();
         $table->date('date_recuperation')->nullable();
         $table->foreignId('affectation_id')->constrained('affectations')->onDelete('cascade');
