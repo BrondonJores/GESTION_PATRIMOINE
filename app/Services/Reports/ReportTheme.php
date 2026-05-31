@@ -30,7 +30,7 @@ class ReportTheme
 
     public function pageHeight(): int
     {
-        return 842;
+        return 838;
     }
 
     public function margin(): int
