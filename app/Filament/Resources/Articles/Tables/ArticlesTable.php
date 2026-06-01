@@ -77,16 +77,7 @@ class ArticlesTable
                         'Réformé'       => 'Réformé',
                     ]),
 
-                SelectFilter::make('famille')
-                    ->label('Famille')
-                    ->options(Famille::pluck('nom_famille', 'id')->toArray())
-                    ->query(
-                        fn(Builder $q, array $data) =>
-                        filled($data['value'])
-                            ? $q->whereHas('categorie', fn($s) =>
-                            $s->where('famille_id', $data['value']))
-                            : $q
-                    ),
+        
 
                 SelectFilter::make('categorie_id')
                     ->label('Catégorie')
