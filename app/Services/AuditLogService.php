@@ -6,6 +6,9 @@ use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
+use Illuminate\Support\Facades\Request;
+use Illuminate\Support\Facades\Auth;
+
 
 class AuditLogService
 {
@@ -30,8 +33,8 @@ class AuditLogService
         return AuditLog::create([
             'module' => $module,
             'action' => $action,
-            'adresse_ip' => $adresseIp,
-            'user_id' => $user?->id,
+            'adresse_ip' => Request::ip(),
+            'user_id' => Auth::id(),
             'date_action' => Carbon::now(),
         ]);
     }
