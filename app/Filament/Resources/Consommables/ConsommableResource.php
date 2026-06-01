@@ -26,7 +26,7 @@ class ConsommableResource extends Resource
     protected static ?string $model = Consommable::class;
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-beaker';
   protected static ?string $navigationLabel = 'Consommables';
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 4;
 
 
 

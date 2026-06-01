@@ -24,7 +24,7 @@ class ArticleResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-cube';
 
     protected static ?string $navigationLabel = 'Équipements';
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 3;
 
 
     public static function form(Schema $schema): Schema
