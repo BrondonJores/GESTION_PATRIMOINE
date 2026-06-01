@@ -16,7 +16,7 @@ class ContactSettings extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPhone;
 
-    protected static UnitEnum|string|null $navigationGroup = 'Support & Admin';
+    protected static string|UnitEnum|null $navigationGroup = 'Support & Admin';
 
     protected static ?string $navigationLabel = 'Contacts & Alertes';
 
