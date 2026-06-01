@@ -8,11 +8,13 @@ use App\Models\Famille;
 use App\Services\ArticleImportService;
 use App\Services\ArticleService;
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -28,6 +30,12 @@ class ArticlesTable
     {
         return $table
             ->columns([
+                ImageColumn::make('qr_code')
+                    ->label('QR')
+                    ->getStateUsing(fn (Article $record) => app(ArticleService::class)->generateQrCode($record))
+                    ->width(40)
+                    ->height(40),
+
                 TextColumn::make('numero_reference')
                     ->label('N° Référence')
                     ->searchable()
@@ -90,6 +98,23 @@ class ArticlesTable
                     ->visible(fn () =>
                         Auth::user()?->can('update articles') ?? false
                     ),
+
+                Action::make('print_label')
+                    ->label('Étiquette')
+                    ->icon('heroicon-o-printer')
+                    ->color('gray')
+                    ->action(function (Article $record) {
+                        $qrCode = app(ArticleService::class)->generateQrCode($record);
+                        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.article-label', [
+                            'article' => $record,
+                            'qrCode' => $qrCode,
+                        ])->setPaper([0, 0, 170, 113]); // Environ 60mm x 40mm en points
+
+                        return response()->streamDownload(
+                            fn () => print($pdf->output()),
+                            "etiquette-{$record->numero_reference}.pdf"
+                        );
+                    }),
 
                 // ── MAINTENANCE ────────────────────────────────────
                 Action::make('maintenance')
@@ -248,7 +273,41 @@ class ArticlesTable
                             ->success()
                             ->send();
                     }),
-                BulkActionGroup::make([]),
+                BulkActionGroup::make([
+                    BulkAction::make('print_labels')
+                        ->label('Imprimer Étiquettes')
+                        ->icon('heroicon-o-printer')
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                            $pdfContent = '';
+                            foreach ($records as $record) {
+                                $qrCode = app(ArticleService::class)->generateQrCode($record);
+                                $pdfContent .= \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.article-label', [
+                                    'article' => $record,
+                                    'qrCode' => $qrCode,
+                                ])->setPaper([0, 0, 170, 113])->output();
+                            }
+
+                            // Note: Concatenating PDF outputs directly like this might not work perfectly with all PDF engines.
+                            // A better way is to use a single view with a loop and page breaks.
+                            
+                            return response()->streamDownload(
+                                function () use ($records) {
+                                    $data = [];
+                                    foreach ($records as $record) {
+                                        $data[] = [
+                                            'article' => $record,
+                                            'qrCode' => app(ArticleService::class)->generateQrCode($record),
+                                        ];
+                                    }
+                                    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.article-labels-bulk', [
+                                        'labels' => $data,
+                                    ])->setPaper([0, 0, 170, 113]);
+                                    print($pdf->output());
+                                },
+                                "etiquettes-bulk.pdf"
+                            );
+                        }),
+                ]),
             ])
             ->defaultSort('created_at', 'desc');
     }

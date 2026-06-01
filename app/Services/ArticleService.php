@@ -95,6 +95,12 @@ class ArticleService
           'observations' => "[RÉINTÉGRATION — " . now()->format('d/m/Y') . "] " . $motif,
         ]);
     }
+
+    public function generateQrCode(Article $article): string
+    {
+        return (new \chillerlan\QRCode\QRCode)->render($article->numero_reference);
+    }
+
     // Statistiques — calcul direct sur article.statut
     public function getStatistiques(): array
     {
