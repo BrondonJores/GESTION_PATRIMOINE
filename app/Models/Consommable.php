@@ -1,5 +1,5 @@
 <?php
-// app/Models/Consommable.php
+
 
 namespace App\Models;
 
@@ -21,8 +21,6 @@ class Consommable extends Model
     protected $casts = [
         'quantite_stock'   => 'integer',
         'quantite_min'     => 'integer',
-        'valeur_unitaire'  => 'decimal:2',
-        'date_acquisition' => 'date',
     ];
 
     public function categorie(): BelongsTo
@@ -30,9 +28,10 @@ class Consommable extends Model
         return $this->belongsTo(Categorie::class);
     }
 
-    public function affectations(): HasMany
+     public function affectations(): HasMany
     {
-        return $this->hasMany(AffectationConsommable::class);
+        return $this->hasMany(Affectation::class)
+                    ->where('type', 'consommable');
     }
 
     public function alertes(): HasMany
