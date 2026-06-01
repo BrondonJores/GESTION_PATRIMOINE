@@ -6,6 +6,7 @@ use App\Services\AuditLogService;
 use Filament\Auth\Pages\EditProfile;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Placeholder;
 use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Section;
@@ -55,8 +56,12 @@ class Profile extends EditProfile
                             ->label('Nom complet'),
                         $this->getEmailFormComponent()
                             ->label('Adresse e-mail'),
+                        TextInput::make('telephone')
+                            ->label('Téléphone')
+                            ->tel()
+                            ->maxLength(20),
                     ])
-                    ->columns(2),
+                    ->columns(3),
                 Section::make('Sécurité')
                     ->description('Renseignez un nouveau mot de passe uniquement si vous souhaitez le modifier.')
                     ->schema([

@@ -22,6 +22,10 @@ class UserForm
                     ->required()
                     ->unique(ignoreRecord: true)
                     ->maxLength(255),
+                TextInput::make('telephone')
+                    ->label('Téléphone')
+                    ->tel()
+                    ->maxLength(20),
                 TextInput::make('password')
                     ->label('Mot de passe')
                     ->password()

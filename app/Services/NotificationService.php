@@ -2,48 +2,57 @@
 
 namespace App\Services;
 
-use App\Models\Notification;
 use App\Models\User;
+use App\Services\Notifications\Channels\InAppChannel;
+use App\Services\Notifications\Channels\MailChannel;
+use App\Services\Notifications\Channels\SmsChannel;
+use App\Services\Notifications\Channels\NotificationChannelInterface;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class NotificationService
 {
-    private const CANAUX_AUTORISES = ['Email', 'SMS', 'InApp', 'Tous'];
+    /** @var array<string, NotificationChannelInterface> */
+    protected array $channels = [];
 
-    public function notifyUser(User $user, string $contenu, string $canal = 'InApp'): Notification
+    public function __construct()
     {
-        $this->validerCanal($canal);
-
-        return Notification::create([
-            'canal' => $canal,
-            'contenu' => $contenu,
-            'lu' => false,
-            'date_envoi' => Carbon::now(),
-            'user_id' => $user->id,
-        ]);
+        // Enregistrement des canaux disponibles
+        $this->channels = [
+            'InApp' => new InAppChannel(),
+            'Email' => new MailChannel(),
+            'SMS'   => new SmsChannel(),
+        ];
     }
 
     /**
-     * Notifie plusieurs utilisateurs dans une même transaction.
-     *
-     * @param Collection<int, User> $users
+     * Notifie un utilisateur via un ou plusieurs canaux.
+     * Canal peut être 'InApp', 'Email', 'SMS', 'Tous' ou un array ['Email', 'InApp']
      */
-    public function notifyUsers(Collection $users, string $contenu, string $canal = 'InApp'): void
+    public function notifyUser(User $user, string $contenu, string|array $canal = 'InApp', array $options = []): void
     {
-        $this->validerCanal($canal);
+        $canauxAUtiliser = $this->resoudreCanaux($canal);
 
-        DB::transaction(function () use ($users, $contenu, $canal): void {
-            $users->each(fn (User $user) => $this->notifyUser($user, $contenu, $canal));
-        });
+        foreach ($canauxAUtiliser as $nomCanal) {
+            if (isset($this->channels[$nomCanal])) {
+                try {
+                    $this->channels[$nomCanal]->send($user, $contenu, $options);
+                } catch (\Throwable $e) {
+                    // On logue l'erreur mais on continue pour les autres canaux
+                    \Illuminate\Support\Facades\Log::error("Erreur d'envoi notification via {$nomCanal} : " . $e->getMessage());
+                }
+            }
+        }
     }
 
-    public function markAsRead(Notification $notification): Notification
+    /**
+     * Notifie plusieurs utilisateurs.
+     */
+    public function notifyUsers(Collection $users, string $contenu, string|array $canal = 'InApp', array $options = []): void
     {
-        $notification->forceFill(['lu' => true])->save();
-
-        return $notification;
+        DB::transaction(function () use ($users, $contenu, $canal, $options): void {
+            $users->each(fn (User $user) => $this->notifyUser($user, $contenu, $canal, $options));
+        });
     }
 
     public function supportRecipients(): Collection
@@ -51,10 +60,14 @@ class NotificationService
         return User::permission('view notifications')->get();
     }
 
-    private function validerCanal(string $canal): void
+    protected function resoudreCanaux(string|array $canal): array
     {
-        if (! in_array($canal, self::CANAUX_AUTORISES, true)) {
-            throw new \InvalidArgumentException("Le canal de notification [{$canal}] n'est pas autorisé.");
+        if (is_array($canal)) return $canal;
+
+        if ($canal === 'Tous') {
+            return array_keys($this->channels);
         }
+
+        return [$canal];
     }
 }

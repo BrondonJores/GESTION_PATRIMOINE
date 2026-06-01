@@ -23,6 +23,9 @@ class UsersTable
                     ->label('Email')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('telephone')
+                    ->label('Téléphone')
+                    ->searchable(),
                 TextColumn::make('roles.name')
                     ->label('Rôles')
                     ->badge(),
