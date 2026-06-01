@@ -78,26 +78,13 @@ class AffectationForm
                     ->afterStateUpdated(fn(Set $set) => $set('salle_id', null))
                     ->placeholder('Sélectionnez une option'),
 
-                Select::make('salle_id')
+               
+           Select::make('salle_id')
     ->label('Salle (optionnelle)')
     ->options(fn(Get $get) => $get('bloc_id')
         ? Salle::where('bloc_id', $get('bloc_id'))
             ->where('actif', true)
-            ->get()
-            ->mapWithKeys(function ($salle) {
-                $nbAffectes = \App\Models\Affectation::where('salle_id', $salle->id)
-                    ->where('type', 'article')
-                    ->whereNull('date_recuperation')
-                    ->count();
-                $capacite = $salle->capacite ?? '∞';
-                $restant = $salle->capacite
-                    ? $salle->capacite - $nbAffectes
-                    : '∞';
-                $label = $restant === 0
-                    ? "🔴 {$salle->nom_salle} — PLEINE ({$nbAffectes}/{$capacite})"
-                    : "🟢 {$salle->nom_salle} — {$nbAffectes}/{$capacite}";
-                return [$salle->id => $label];
-            })
+            ->pluck('nom_salle', 'id')
         : [])
     ->searchable()
     ->placeholder('-- Tout le bloc --'),
