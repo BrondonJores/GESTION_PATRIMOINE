@@ -98,7 +98,36 @@ class ArticleService
 
     public function generateQrCode(Article $article): string
     {
-        return (new \chillerlan\QRCode\QRCode)->render($article->numero_reference);
+        // Recherche de l'affectation active (lieu)
+        $affectation = $article->affectations()
+                               ->whereNull('date_recuperation')
+                               ->latest('date_affectation')
+                               ->first();
+        
+        $lieu = 'En stock';
+        if ($affectation) {
+            $nomBloc = $affectation->bloc ? $affectation->bloc->nom_bloc : '';
+            $nomSalle = $affectation->salle ? $affectation->salle->nom_salle : '';
+            $lieu = trim($nomBloc . ($nomBloc && $nomSalle ? ' - ' : '') . $nomSalle);
+            if (!$lieu) $lieu = 'Affecté (Lieu inconnu)';
+        } elseif ($article->statut !== Article::DISPONIBLE) {
+            $lieu = $article->statut;
+        }
+
+        // Création d'une chaîne formatée avec les infos essentielles
+        $qrData = sprintf(
+            "Réf: %s\nArticle: %s\nCatégorie: %s\nLieu: %s",
+            $article->numero_reference,
+            $article->designation,
+            $article->categorie ? $article->categorie->nom_categorie : 'N/A',
+            $lieu
+        );
+
+        if (isset($article->numero_serie) && $article->numero_serie) {
+            $qrData .= sprintf("\nS/N: %s", $article->numero_serie);
+        }
+
+        return (new \chillerlan\QRCode\QRCode)->render($qrData);
     }
 
     // Statistiques — calcul direct sur article.statut
