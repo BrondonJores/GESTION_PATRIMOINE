@@ -12,6 +12,18 @@ class ConsommableAlertTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // On mocke le NotificationService pour éviter les erreurs de permissions
+        // et ne pas réellement envoyer d'e-mails/SMS pendant les tests de logique.
+        $this->mock(\App\Services\NotificationService::class, function ($mock) {
+            $mock->shouldReceive('notifyUsers');
+            $mock->shouldReceive('supportRecipients')->andReturn(new \Illuminate\Database\Eloquent\Collection());
+        });
+    }
+
     public function test_alerte_minimal_atteint_generer_automatiquement(): void
     {
         // 1. Mise en place du catalogue

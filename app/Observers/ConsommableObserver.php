@@ -22,20 +22,20 @@ class ConsommableObserver
 
     public function updated(Consommable $consommable): void
     {
-        // Recalculer le statut automatiquement
+        // 1. On capture d'abord si le stock a changé, avant toute autre manipulation du modèle
+        $stockAChange = $consommable->wasChanged('quantite_stock');
+        $ancienStock  = (int) $consommable->getOriginal('quantite_stock');
+        $nouveauStock = (int) $consommable->quantite_stock;
+
+        // 2. Recalculer le statut automatiquement
         $nouveauStatut = $consommable->calculerStatut();
 
         if ($consommable->statut !== $nouveauStatut) {
             $consommable->updateQuietly(['statut' => $nouveauStatut]);
         }
 
-        // Vérifier les seuils uniquement si le stock a DIMINUÉ
-        if ($consommable->wasChanged('quantite_stock')) {
-            $ancien  = (int) $consommable->getOriginal('quantite_stock');
-            $nouveau = (int) $consommable->quantite_stock;
-
-            if ($nouveau >= $ancien) return;
-
+        // 3. Vérifier les seuils uniquement si le stock a DIMINUÉ
+        if ($stockAChange && $nouveauStock < $ancienStock) {
             $this->verifierSeuils($consommable);
         }
     }
