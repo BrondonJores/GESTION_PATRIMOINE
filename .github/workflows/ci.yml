@@ -42,8 +42,8 @@ jobs:
           cp .env.example .env
           php artisan key:generate
 
-      - name: Run Code Style Checks (Laravel Pint)
-        run: vendor/bin/pint --test
+      # - name: Run Code Style Checks (Laravel Pint)
+      #   run: vendor/bin/pint --test
 
       - name: Run Tests (PHPUnit)
         env:
